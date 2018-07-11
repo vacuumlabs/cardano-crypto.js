@@ -1,0 +1,5 @@
+vendor
+cardano-crypto.c
+build.js
+.npmignore
+.gitignore
