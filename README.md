@@ -8,7 +8,7 @@
 var lib = require('cardano-crypto.js')
 
 var mnemonic = 'logic easily waste eager injury oval sentence wine bomb embrace gossip supreme'
-var parentWalletSecret = lib.walletSecretFromMnemonic(mnemonic)
+var walletSecret = lib.walletSecretFromMnemonic(mnemonic)
 var msg = new Buffer('hello there')
 var sig = lib.sign(msg, walletSecret)
 ```
@@ -33,3 +33,9 @@ var parentWalletSecret = lib.walletSecretFromMnemonic(mnemonic)
 var parentWalletPublicKey = parentWalletSecret.slice(64, 128)
 var childWalletSecret = lib.derivePublic(parentWalletPublicKey, 1, 1)
 ```
+
+# development
+
+* Install [emscripten](https://askubuntu.com/questions/891630/how-to-install-the-latest-emscripten-on-ubuntu-using-command-line)
+* run `npm install`
+* run `npm run build`
