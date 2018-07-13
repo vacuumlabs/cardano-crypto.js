@@ -85,3 +85,39 @@ test('key nonhardened derivation', function(t){
     'should properly derive nonhardened child key in derivation mode 2'
   )
 })
+
+test('key nonhardened derivation', function(t){
+  t.plan(2)
+
+  t.equals(
+    lib.derivePublic(sampleExtendedPublicKey, sampleNonhardenedIndex, 1).toString('hex'),
+    sampleNonHardenedChildKeyMode1.toString('hex'),
+    'should properly derive nonhardened child key in derivation mode 1'
+  )
+
+  t.equals(
+    lib.derivePublic(sampleExtendedPublicKey, sampleNonhardenedIndex, 2).toString('hex'),
+    sampleNonHardenedChildKeyMode2.toString('hex'),
+    'should properly derive nonhardened child key in derivation mode 2'
+  )
+})
+
+test('blake2b256', function(t){
+  t.plan(1)
+
+  t.equals(
+    lib.blake2b256(sampleMessage).toString('hex'),
+    'a21cf4b3604cf4b2bc53e6f88f6a4d75ef5ff4ab415f3e99aea6b61c8249c4d0',
+    'should properly compute blake2b256 hash'
+  )
+})
+
+test('sha3', function(t){
+  t.plan(1)
+
+  t.equals(
+    lib.blake2b256(sampleMessage).toString('hex'),
+    'a21cf4b3604cf4b2bc53e6f88f6a4d75ef5ff4ab415f3e99aea6b61c8249c4d0',
+    'should properly compute blake2b256 hash'
+  )
+})

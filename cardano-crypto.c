@@ -3,15 +3,16 @@
 #endif
 #include "vendor/cbits/ed25519/ed25519.h"
 #include "vendor/cbits/encrypted_sign.h"
+#include "vendor/cbits/cryptonite_cbits/blake2/ref/blake2.h"
 #include <emscripten.h>
 
 EMSCRIPTEN_KEEPALIVE
-void sign(const unsigned char *wallet_secret, const unsigned char *message, uint32_t message_len, unsigned char *signature){
+void sign(const unsigned char *wallet_secret, const unsigned char *message, size_t message_len, unsigned char *signature){
   wallet_encrypted_sign((encrypted_key*) wallet_secret, NULL, 0, message, message_len, signature);
 }
 
 EMSCRIPTEN_KEEPALIVE
-int verify(const unsigned char *message, uint32_t message_len, const unsigned char *public_key, const unsigned char *signature){
+int verify(const unsigned char *message, size_t message_len, const unsigned char *public_key, const unsigned char *signature){
   return cardano_crypto_ed25519_sign_open(message, message_len, public_key, signature);
 }
 
@@ -28,4 +29,9 @@ void derive_private(const unsigned char *parent_private_key, uint32_t index, uns
 EMSCRIPTEN_KEEPALIVE
 void derive_public(const unsigned char *parent_public_key, const unsigned char *parent_chain_code, uint32_t index, const unsigned char *child_public_key, const unsigned char *child_chain_code, uint32_t mode){
   wallet_encrypted_derive_public((uint8_t*) parent_public_key, (uint8_t*) parent_chain_code, index, (uint8_t*) child_public_key, (uint8_t*) child_chain_code, mode);
+}
+
+EMSCRIPTEN_KEEPALIVE
+int blake2b256(const unsigned char *in, size_t inlen, unsigned char *out){
+  return blake2b(out, 32, in, inlen, NULL, 0);
 }

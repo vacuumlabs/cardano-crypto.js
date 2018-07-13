@@ -1,7 +1,6 @@
 var Module = require('./lib.js')
 var bip39 = require('bip39')
 var cbor = require('cbor')
-var blake2 = require('blakejs')
 var crypto = require('crypto')
 
 function validateDerivationMode(input) {
@@ -114,13 +113,8 @@ function mnemonicToHashSeed(mnemonic) {
 
   const ent = Buffer.from(bip39.mnemonicToEntropy(mnemonic), 'hex')
 
-  return cbor.encode(hashBlake2b256(cbor.encode(ent)))
+  return cbor.encode(exports.blake2b256(cbor.encode(ent)))
 }
-
-function hashBlake2b256(input) {
-  return Buffer.from(blake2.blake2b(input, null, 32))
-}
-
 
 exports.walletSecretFromMnemonic = function(mnemonic) {
   var hashSeed = mnemonicToHashSeed(mnemonic)
@@ -200,4 +194,23 @@ exports.derivePublic = function(parentExtPubKey, index, derivationMode){
   Module._free(parentChainCodeArrPtr)
 
   return Buffer.concat([new Buffer(childPubKeyArr), new Buffer(childChainCodeArr)])
+}
+
+exports.blake2b256 = function(input){
+  validateBuffer(input)
+
+  var inputLen = input.length
+  var inputArrPtr = Module._malloc(inputLen)
+  var inputArr = new Uint8Array(Module.HEAPU8.buffer, inputArrPtr, inputLen)
+  var outputArrPtr = Module._malloc(32)
+  var outputArr = new Uint8Array(Module.HEAPU8.buffer, outputArrPtr, 32)
+
+  inputArr.set(input)
+  
+  Module._blake2b256(inputArrPtr, inputLen, outputArrPtr)
+  
+  Module._free(inputArrPtr)
+  Module._free(outputArrPtr)
+
+  return Buffer.from(outputArr)
 }
