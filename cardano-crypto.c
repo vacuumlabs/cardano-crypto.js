@@ -4,6 +4,7 @@
 #include "vendor/cbits/ed25519/ed25519.h"
 #include "vendor/cbits/encrypted_sign.h"
 #include "vendor/cbits/cryptonite_cbits/blake2/ref/blake2.h"
+//#include "vendor/cbits/c20p1305/chacha20poly1305.h"
 #include <emscripten.h>
 
 EMSCRIPTEN_KEEPALIVE
@@ -35,3 +36,27 @@ EMSCRIPTEN_KEEPALIVE
 int blake2b256(const unsigned char *in, size_t inlen, unsigned char *out){
   return blake2b(out, 32, in, inlen, NULL, 0);
 }
+
+EMSCRIPTEN_KEEPALIVE
+void cardano_memory_combine(const uint8_t *pass, const uint32_t pass_len, const uint8_t *source, uint8_t *dest, uint32_t sz){
+  memory_combine(pass, pass_len, source, dest, sz);
+}
+/*
+EMSCRIPTEN_KEEPALIVE
+void chacha20poly1305_enc(uint8_t *key, uint8_t *nonce, uint8_t *in, uint8_t *out, const size_t n){
+  chacha20poly1305_ctx ctx;
+  
+  memset(&ctx, 0, sizeof(chacha20poly1305_ctx));
+  xchacha20poly1305_init(&ctx, key, nonce);
+  chacha20poly1305_encrypt(&ctx, in, out, n);
+}
+
+EMSCRIPTEN_KEEPALIVE
+void chacha20poly1305_dec(uint8_t *key, uint8_t *nonce, uint8_t *in, uint8_t *out, const size_t n){
+  chacha20poly1305_ctx ctx;
+  
+  memset(&ctx, 0, sizeof(chacha20poly1305_ctx));
+  xchacha20poly1305_init(&ctx, key, nonce);
+  chacha20poly1305_decrypt(&ctx, in, out, n);
+}
+*/

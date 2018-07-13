@@ -214,3 +214,7 @@ exports.blake2b256 = function(input){
 
   return Buffer.from(outputArr)
 }
+
+exports.sha3_256 = function(input) {
+  return Buffer.from('aa', 'hex')
+}
