@@ -36,7 +36,7 @@ exports.sign = function(msg, walletSecret){
   var walletSecretArrPtr = Module._malloc(128)
   var walletSecretArr = new Uint8Array(Module.HEAPU8.buffer, walletSecretArrPtr, 128)
   var sigPtr = Module._malloc(64)
-  var sig = new Uint8Array(Module.HEAPU8.buffer, sigPtr, 64)
+  var sigArr = new Uint8Array(Module.HEAPU8.buffer, sigPtr, 64)
 
   msgArr.set(msg)
   walletSecretArr.set(walletSecret)
@@ -46,8 +46,34 @@ exports.sign = function(msg, walletSecret){
   Module._free(walletSecretArrPtr)
   Module._free(sigPtr)
 
-  return new Buffer(sig)
-} 
+  return new Buffer(sigArr)
+}
+
+exports.verify = function(msg, publicKey, sig){
+  validateBuffer(msg)
+  validateBuffer(publicKey, 32)
+  validateBuffer(sig, 64)
+
+  var msgLen = msg.length
+  var msgArrPtr = Module._malloc(msgLen)
+  var msgArr = new Uint8Array(Module.HEAPU8.buffer, msgArrPtr, msgLen)
+  var publicKeyArrPtr = Module._malloc(32)
+  var publicKeyArr = new Uint8Array(Module.HEAPU8.buffer, publicKeyArrPtr, 32)
+  var sigPtr = Module._malloc(64)
+  var sigArr = new Uint8Array(Module.HEAPU8.buffer, sigPtr, 64)
+
+  msgArr.set(msg)
+  publicKeyArr.set(publicKey)
+  sigArr.set(sig)
+
+  var result = Module._verify(msgArrPtr, msgLen, publicKeyArrPtr, sigPtr) === 0
+
+  Module._free(msgArrPtr)
+  Module._free(publicKeyArrPtr)
+  Module._free(sigPtr)
+
+  return result
+}
 
 function walletSecretFromSeed(seed, chainCode){
   validateBuffer(seed, 32)
