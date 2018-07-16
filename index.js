@@ -197,9 +197,9 @@ function derivePublic(parentExtPubKey, index, derivationMode){
 
   parentPubKeyArr.set(parentPubKey)
   parentChainCodeArr.set(parentChainCode)
-  
+
   Module._derive_public(parentPubKeyArrPtr, parentChainCodeArrPtr, index, childPubKeyArrPtr, childChainCodeArrPtr, derivationMode)
-  
+
   Module._free(parentPubKeyArrPtr)
   Module._free(parentChainCodeArrPtr)
   Module._free(parentPubKeyArrPtr)
@@ -218,9 +218,9 @@ function blake2b256(input) {
   var outputArr = new Uint8Array(Module.HEAPU8.buffer, outputArrPtr, 32)
 
   inputArr.set(input)
-  
+
   Module._blake2b256(inputArrPtr, inputLen, outputArrPtr)
-  
+
   Module._free(inputArrPtr)
   Module._free(outputArrPtr)
 
@@ -228,7 +228,23 @@ function blake2b256(input) {
 }
 
 function sha3_256(input) {
-  return Buffer.from('aa', 'hex')
+  validateBuffer(input)
+  var inputLen = input.length
+  var inputArrPtr = Module._malloc(inputLen)
+  var inputArr = new Uint8Array(Module.HEAPU8.buffer, inputArrPtr, inputLen)
+
+  var outputLen = 32
+  var outputArrPtr = Module._malloc(outputLen)
+  var outputArr = new Uint8Array(Module.HEAPU8.buffer, outputArrPtr, outputLen)
+
+  inputArr.set(input)
+
+  Module._sha3_256(inputArrPtr, inputLen, outputArrPtr)
+
+  Module._free(inputArrPtr)
+  Module._free(outputArrPtr)
+
+  return Buffer.from(outputArr)
 }
 
 function cardanoMemoryCombine(input, password) {
@@ -247,15 +263,15 @@ function cardanoMemoryCombine(input, password) {
   var inputLen = input.length
   var inputArrPtr = Module._malloc(inputLen)
   var inputArr = new Uint8Array(Module.HEAPU8.buffer, inputArrPtr, inputLen)
-  
+
   var outputArrPtr = Module._malloc(inputLen)
   var outputArr = new Uint8Array(Module.HEAPU8.buffer, outputArrPtr, inputLen)
 
   inputArr.set(input)
   transformedPasswordArr.set(transformedPassword)
-  
+
   Module._cardano_memory_combine(transformedPasswordArrPtr, transformedPasswordLen, inputArrPtr, outputArrPtr, inputLen)
-  
+
   Module._free(inputArrPtr)
   Module._free(outputArrPtr)
   Module._free(transformedPasswordArrPtr)
@@ -338,7 +354,7 @@ function chacha20poly1305Decrypt(input, key, nonce) {
   nonceArr.set(nonce)
 
   var resultCode = Module._chacha20poly1305_enc(keyArrPtr, nonceArrPtr, inputArrPtr, inputLen, outputArrPtr, tagArrPtr, tagLen, 0)
-  
+
   Module._free(inputArrPtr)
   Module._free(keyArrPtr)
   Module._free(nonceArrPtr)

@@ -5,6 +5,7 @@
 #include "vendor/cbits/encrypted_sign.h"
 #include "vendor/cbits/cryptonite_cbits/blake2/ref/blake2.h"
 #include "vendor/cbits/chachapoly/chachapoly.h"
+#include "vendor/cbits/cryptonite_cbits/cryptonite_sha3.h"
 #include <emscripten.h>
 
 EMSCRIPTEN_KEEPALIVE
@@ -36,6 +37,16 @@ EMSCRIPTEN_KEEPALIVE
 int blake2b256(const unsigned char *in, size_t inlen, unsigned char *out){
   return blake2b(out, 32, in, inlen, NULL, 0);
 }
+
+EMSCRIPTEN_KEEPALIVE
+void sha3_256(const unsigned char *in, size_t inlen, unsigned char *out){
+  struct sha3_ctx ctx;
+  memset(&ctx, 0, sizeof(struct sha3_ctx));
+  cryptonite_sha3_init(&ctx, 256);
+  cryptonite_sha3_update(&ctx, in, inlen);
+  cryptonite_sha3_finalize(&ctx, 256, out);
+}
+
 
 EMSCRIPTEN_KEEPALIVE
 void cardano_memory_combine(const uint8_t *pass, const uint32_t pass_len, const uint8_t *source, uint8_t *dest, uint32_t sz){

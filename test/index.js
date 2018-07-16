@@ -112,16 +112,16 @@ test('blake2b256', function(t){
   )
 })
 
-/*test('sha3_256', function(t){
+test('sha3_256', function(t){
   t.plan(1)
   var message = Buffer.from('83008200584078732eb9d33e03b3daab4a4613bc19b8820ef5911caf43785780ec6493653bf67115f7f2c460be13dcc09f06f3d63fffe05a3d12996e5224e189a41ee2ef5c95a101581e581c140539c64edded60a7f2d869373e87e744591935bfcdadaa8517974c', 'hex')
 
   t.equals(
     lib.sha3_256(message).toString('hex'),
     '98b05e27eab982f4d108694a5ab636d68cc898e4af98980516fe2560b13e53a9',
-    'should properly compute blake2b256 hash'
+    'should properly compute sha3_256 hash'
   )
-})*/
+})
 
 test('chacha20poly1305', function(t) {
   t.plan(2)
