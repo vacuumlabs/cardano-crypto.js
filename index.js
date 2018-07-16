@@ -27,11 +27,17 @@ function validateDerivationIndex(input) {
 
 function validateBool(input) {
   if (typeof(input) !== typeof(true)) {
-    throw new Error('not boolean!')
+    throw new Error('not a boolean!')
   }
 }
 
-exports.sign = function(msg, walletSecret){
+function validateString(input) {
+  if (typeof(input) !== typeof('aa')) {
+    throw new Error('not a string!')
+  }
+}
+
+function sign(msg, walletSecret){
   validateBuffer(msg)
   validateBuffer(walletSecret, 128)
 
@@ -54,7 +60,7 @@ exports.sign = function(msg, walletSecret){
   return new Buffer(sigArr)
 }
 
-exports.verify = function(msg, publicKey, sig){
+function verify(msg, publicKey, sig){
   validateBuffer(msg)
   validateBuffer(publicKey, 32)
   validateBuffer(sig, 64)
@@ -119,10 +125,10 @@ function mnemonicToHashSeed(mnemonic) {
 
   const ent = Buffer.from(bip39.mnemonicToEntropy(mnemonic), 'hex')
 
-  return cbor.encode(exports.blake2b256(cbor.encode(ent)))
+  return cbor.encode(blake2b256(cbor.encode(ent)))
 }
 
-exports.walletSecretFromMnemonic = function(mnemonic) {
+function walletSecretFromMnemonic(mnemonic) {
   var hashSeed = mnemonicToHashSeed(mnemonic)
   var result
 
@@ -155,7 +161,7 @@ exports.walletSecretFromMnemonic = function(mnemonic) {
   return result
 }
 
-exports.derivePrivate = function(parentKey, index, derivationMode){
+ function derivePrivate(parentKey, index, derivationMode){
   validateBuffer(parentKey, 128)
   validateDerivationIndex(index)
   validateDerivationMode(derivationMode)
@@ -171,7 +177,7 @@ exports.derivePrivate = function(parentKey, index, derivationMode){
   return new Buffer(childKeyArr)
 }
 
-exports.derivePublic = function(parentExtPubKey, index, derivationMode){
+function derivePublic(parentExtPubKey, index, derivationMode){
   validateBuffer(parentExtPubKey, 64)
   validateDerivationIndex(index)
   validateDerivationMode(derivationMode)
@@ -202,7 +208,7 @@ exports.derivePublic = function(parentExtPubKey, index, derivationMode){
   return Buffer.concat([new Buffer(childPubKeyArr), new Buffer(childChainCodeArr)])
 }
 
-exports.blake2b256 = function(input){
+function blake2b256(input) {
   validateBuffer(input)
 
   var inputLen = input.length
@@ -221,11 +227,43 @@ exports.blake2b256 = function(input){
   return Buffer.from(outputArr)
 }
 
-exports.sha3_256 = function(input) {
+function sha3_256(input) {
   return Buffer.from('aa', 'hex')
 }
 
-exports.chacha20poly1305Encrypt = function(input, key, nonce) {
+function cardanoMemoryCombine(input, password) {
+  validateString(password)
+  validateBuffer(input)
+
+  if (password === '') {
+    return input
+  }
+
+  var transformedPassword = blake2b256(Buffer.from(password, 'utf-8'))
+  var transformedPasswordLen = transformedPassword.length
+  var transformedPasswordArrPtr = Module._malloc(transformedPasswordLen)
+  var transformedPasswordArr = new Uint8Array(Module.HEAPU8.buffer, transformedPasswordArrPtr, transformedPasswordLen)
+
+  var inputLen = input.length
+  var inputArrPtr = Module._malloc(inputLen)
+  var inputArr = new Uint8Array(Module.HEAPU8.buffer, inputArrPtr, inputLen)
+  
+  var outputArrPtr = Module._malloc(inputLen)
+  var outputArr = new Uint8Array(Module.HEAPU8.buffer, outputArrPtr, inputLen)
+
+  inputArr.set(input)
+  transformedPasswordArr.set(transformedPassword)
+  
+  Module._cardano_memory_combine(transformedPasswordArrPtr, transformedPasswordLen, inputArrPtr, outputArrPtr, inputLen)
+  
+  Module._free(inputArrPtr)
+  Module._free(outputArrPtr)
+  Module._free(transformedPasswordArrPtr)
+
+  return Buffer.from(outputArr)
+}
+
+function chacha20poly1305Encrypt(input, key, nonce) {
   validateBuffer(input)
   validateBuffer(key, 32)
   validateBuffer(nonce, 12)
@@ -265,7 +303,7 @@ exports.chacha20poly1305Encrypt = function(input, key, nonce) {
   return Buffer.from(outputArr)
 }
 
-exports.chacha20poly1305Decrypt = function(input, key, nonce) {
+function chacha20poly1305Decrypt(input, key, nonce) {
   validateBuffer(input)
   validateBuffer(key, 32)
   validateBuffer(nonce, 12)
@@ -305,10 +343,24 @@ exports.chacha20poly1305Decrypt = function(input, key, nonce) {
   Module._free(keyArrPtr)
   Module._free(nonceArrPtr)
   Module._free(outputArrPtr)
+  Module._free(tagArrPtr)
 
   if (resultCode !== 0) {
     throw Error('chacha20poly1305 decryption has failed!')
   }
 
   return Buffer.from(outputArr)
+}
+
+module.exports = {
+  derivePublic,
+  derivePrivate,
+  sign,
+  verify,
+  sha3_256,
+  chacha20poly1305Encrypt,
+  chacha20poly1305Decrypt,
+  blake2b256,
+  walletSecretFromMnemonic,
+  cardanoMemoryCombine,
 }

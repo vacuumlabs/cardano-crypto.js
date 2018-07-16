@@ -142,3 +142,22 @@ test('chacha20poly1305', function(t) {
     'should properly decrypt with chacha20poly1305'
   )
 })
+
+test('cardanoMemoryCombine', function(t) {
+  t.plan(2)
+  var input = Buffer.from('41227237bcfda3c7b921225e5d883eb7fdbd14935ebe897f5951769a0bc735bdfa3b548357e19f27d59053bfa22f415f8f5d55bfe031bfe2946a4725f3cdfa3c', 'hex')
+  var password = 'WalletS3cret'
+  var expectedOutput = Buffer.from('80a93f1b0c558631f9473c0169dda414535caefa1a9b4a7a29b41f0d96b4aa4359eafca30ae2726745155a8034c671786984d65b9ac11f850447e3884267801c', 'hex')
+
+  t.equals(
+    lib.cardanoMemoryCombine(input, password).toString('hex'),
+    expectedOutput.toString('hex'),
+    'should properly combine memory with nonempty passphrase'
+  )
+
+  t.equals(
+    lib.cardanoMemoryCombine(input, '').toString('hex'),
+    input.toString('hex'),
+    'should properly combine memory with empty passphrase'
+  )
+})
