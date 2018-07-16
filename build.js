@@ -17,7 +17,7 @@ var files = [
   'vendor/cbits/chachapoly/chachapoly.c',
   'vendor/cbits/chachapoly/poly1305.c',
 ]
-var command = 'emcc cardano-crypto.c ' + files.join(' ') + ' -o lib.js -O1 -s WASM=0'
+var command = 'emcc cardano-crypto.c ' + files.join(' ') + ' -o lib.js -Oz -s WASM=0'
 var child = exec(command, function(err){
   if(err){
     throw err

@@ -1,6 +1,5 @@
 var Module = require('./lib.js')
 var bip39 = require('bip39')
-var cbor = require('cbor')
 var crypto = require('crypto')
 
 function validateDerivationMode(input) {
@@ -35,6 +34,23 @@ function validateString(input) {
   if (typeof(input) !== typeof('aa')) {
     throw new Error('not a string!')
   }
+}
+
+function cborEncodeBuffer(input) {
+  validateBuffer(input)
+
+  var len = input.length
+  var cborPrefix = []
+
+  if (len < 24) {
+    cborPrefix = [0x40 + len]
+  } else if (len < 256) {
+    cborPrefix = [0x58, len]
+  } else {
+    throw Error('CBOR encode for more than 256 bytes not yet implemented')
+  }
+
+  return Buffer.concat([Buffer.from(cborPrefix), input])
 }
 
 function sign(msg, walletSecret){
@@ -125,7 +141,7 @@ function mnemonicToHashSeed(mnemonic) {
 
   const ent = Buffer.from(bip39.mnemonicToEntropy(mnemonic), 'hex')
 
-  return cbor.encode(blake2b256(cbor.encode(ent)))
+  return cborEncodeBuffer(blake2b256(cborEncodeBuffer(ent)))
 }
 
 function walletSecretFromMnemonic(mnemonic) {
@@ -161,7 +177,7 @@ function walletSecretFromMnemonic(mnemonic) {
   return result
 }
 
- function derivePrivate(parentKey, index, derivationMode){
+function derivePrivate(parentKey, index, derivationMode){
   validateBuffer(parentKey, 128)
   validateDerivationIndex(index)
   validateDerivationMode(derivationMode)
