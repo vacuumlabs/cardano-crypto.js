@@ -62,3 +62,11 @@ int chacha20poly1305_enc(const uint8_t *key, const uint8_t *nonce, uint8_t *in, 
   return chachapoly_crypt(&ctx, nonce, NULL, 0, in, in_len, out, tag, tag_len, encrypt);
 }
 
+EMSCRIPTEN_KEEPALIVE
+int scrypt(const uint8_t *key, const uint8_t *nonce, uint8_t *in, size_t in_len, uint8_t *out, uint8_t *tag, size_t tag_len, int encrypt){
+  struct chachapoly_ctx ctx;
+  memset(&ctx, 0, sizeof(struct chachapoly_ctx));
+
+  chachapoly_init(&ctx, key, 256);
+  return chachapoly_crypt(&ctx, nonce, NULL, 0, in, in_len, out, tag, tag_len, encrypt);
+}

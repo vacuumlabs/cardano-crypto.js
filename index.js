@@ -53,7 +53,7 @@ function cborEncodeBuffer(input) {
   return Buffer.concat([Buffer.from(cborPrefix), input])
 }
 
-function sign(msg, walletSecret){
+function sign(msg, walletSecret) {
   validateBuffer(msg)
   validateBuffer(walletSecret, 128)
 
@@ -76,7 +76,7 @@ function sign(msg, walletSecret){
   return new Buffer(sigArr)
 }
 
-function verify(msg, publicKey, sig){
+function verify(msg, publicKey, sig) {
   validateBuffer(msg)
   validateBuffer(publicKey, 32)
   validateBuffer(sig, 64)
@@ -102,7 +102,7 @@ function verify(msg, publicKey, sig){
   return result
 }
 
-function walletSecretFromSeed(seed, chainCode){
+function walletSecretFromSeed(seed, chainCode) {
   validateBuffer(seed, 32)
   validateBuffer(chainCode, 32)
 
@@ -177,7 +177,7 @@ function walletSecretFromMnemonic(mnemonic) {
   return result
 }
 
-function derivePrivate(parentKey, index, derivationMode){
+function derivePrivate(parentKey, index, derivationMode) {
   validateBuffer(parentKey, 128)
   validateDerivationIndex(index)
   validateDerivationMode(derivationMode)
@@ -193,7 +193,7 @@ function derivePrivate(parentKey, index, derivationMode){
   return new Buffer(childKeyArr)
 }
 
-function derivePublic(parentExtPubKey, index, derivationMode){
+function derivePublic(parentExtPubKey, index, derivationMode) {
   validateBuffer(parentExtPubKey, 64)
   validateDerivationIndex(index)
   validateDerivationMode(derivationMode)
