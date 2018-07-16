@@ -25,6 +25,12 @@ function validateDerivationIndex(input) {
   }
 }
 
+function validateBool(input) {
+  if (typeof(input) !== typeof(true)) {
+    throw new Error('not boolean!')
+  }
+}
+
 exports.sign = function(msg, walletSecret){
   validateBuffer(msg)
   validateBuffer(walletSecret, 128)
@@ -217,4 +223,92 @@ exports.blake2b256 = function(input){
 
 exports.sha3_256 = function(input) {
   return Buffer.from('aa', 'hex')
+}
+
+exports.chacha20poly1305Encrypt = function(input, key, nonce) {
+  validateBuffer(input)
+  validateBuffer(key, 32)
+  validateBuffer(nonce, 12)
+
+  var inputLen = input.length
+  var inputArrPtr = Module._malloc(inputLen)
+  var inputArr = new Uint8Array(Module.HEAPU8.buffer, inputArrPtr, inputLen)
+
+  var keyLen = key.length
+  var keyArrPtr = Module._malloc(keyLen)
+  var keyArr = new Uint8Array(Module.HEAPU8.buffer, keyArrPtr, keyLen)
+
+  var nonceLen = nonce.length
+  var nonceArrPtr = Module._malloc(nonceLen)
+  var nonceArr = new Uint8Array(Module.HEAPU8.buffer, nonceArrPtr, nonceLen)
+
+  var tagLen = 16
+  var outputLen = inputLen + tagLen
+  var outputArrPtr = Module._malloc(outputLen)
+  var outputArr = new Uint8Array(Module.HEAPU8.buffer, outputArrPtr, outputLen)
+
+  inputArr.set(input)
+  keyArr.set(key)
+  nonceArr.set(nonce)
+
+  var resultCode = Module._chacha20poly1305_enc(keyArrPtr, nonceArrPtr, inputArrPtr, inputLen, outputArrPtr, outputArrPtr + inputLen, tagLen, 1)
+
+  Module._free(inputArrPtr)
+  Module._free(keyArrPtr)
+  Module._free(nonceArrPtr)
+  Module._free(outputArrPtr)
+
+  if (resultCode !== 0) {
+    throw Error('chacha20poly1305 encryption has failed!')
+  }
+
+  return Buffer.from(outputArr)
+}
+
+exports.chacha20poly1305Decrypt = function(input, key, nonce) {
+  validateBuffer(input)
+  validateBuffer(key, 32)
+  validateBuffer(nonce, 12)
+
+  // extract tag from input
+  var tagLen = 16
+  var tag = input.slice(input.length - tagLen, input.length)
+  var input = input.slice(0, input.length - tagLen)
+
+  var inputLen = input.length
+  var inputArrPtr = Module._malloc(inputLen)
+  var inputArr = new Uint8Array(Module.HEAPU8.buffer, inputArrPtr, inputLen)
+
+  var tagArrPtr = Module._malloc(tagLen)
+  var tagArr = new Uint8Array(Module.HEAPU8.buffer, tagArrPtr, tagLen)
+
+  var keyLen = key.length
+  var keyArrPtr = Module._malloc(keyLen)
+  var keyArr = new Uint8Array(Module.HEAPU8.buffer, keyArrPtr, keyLen)
+
+  var nonceLen = nonce.length
+  var nonceArrPtr = Module._malloc(nonceLen)
+  var nonceArr = new Uint8Array(Module.HEAPU8.buffer, nonceArrPtr, nonceLen)
+
+  var outputLen = inputLen
+  var outputArrPtr = Module._malloc(outputLen)
+  var outputArr = new Uint8Array(Module.HEAPU8.buffer, outputArrPtr, outputLen)
+
+  inputArr.set(input)
+  tagArr.set(tag)
+  keyArr.set(key)
+  nonceArr.set(nonce)
+
+  var resultCode = Module._chacha20poly1305_enc(keyArrPtr, nonceArrPtr, inputArrPtr, inputLen, outputArrPtr, tagArrPtr, tagLen, 0)
+  
+  Module._free(inputArrPtr)
+  Module._free(keyArrPtr)
+  Module._free(nonceArrPtr)
+  Module._free(outputArrPtr)
+
+  if (resultCode !== 0) {
+    throw Error('chacha20poly1305 decryption has failed!')
+  }
+
+  return Buffer.from(outputArr)
 }

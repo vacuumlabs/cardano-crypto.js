@@ -4,7 +4,38 @@ D. J. Bernstein
 Public domain.
 */
 
-#include "ecrypt-sync.h"
+#include "chacha.h"
+
+#define U8C(v) (v##U)
+#define U32C(v) (v##U)
+
+#define U8V(v) ((unsigned char)(v) & U8C(0xFF))
+#define U32V(v) ((uint32_t)(v) & U32C(0xFFFFFFFF))
+
+#define ROTL32(v, n) \
+  (U32V((v) << (n)) | ((v) >> (32 - (n))))
+
+#if (USE_UNALIGNED == 1)
+#define U8TO32_LITTLE(p) \
+    (*((uint32_t *)(p)))
+#define U32TO8_LITTLE(p, v) \
+    do { \
+      *((uint32_t *)(p)) = v; \
+    } while (0)
+#else
+#define U8TO32_LITTLE(p) \
+  (((uint32_t)((p)[0])      ) | \
+   ((uint32_t)((p)[1]) <<  8) | \
+   ((uint32_t)((p)[2]) << 16) | \
+   ((uint32_t)((p)[3]) << 24))
+#define U32TO8_LITTLE(p, v) \
+  do { \
+    (p)[0] = U8V((v)      ); \
+    (p)[1] = U8V((v) >>  8); \
+    (p)[2] = U8V((v) >> 16); \
+    (p)[3] = U8V((v) >> 24); \
+  } while (0)
+#endif
 
 #define ROTATE(v,c) (ROTL32(v,c))
 #define XOR(v,w) ((v) ^ (w))
@@ -17,15 +48,11 @@ Public domain.
   a = PLUS(a,b); d = ROTATE(XOR(d,a), 8); \
   c = PLUS(c,d); b = ROTATE(XOR(b,c), 7);
 
-void ECRYPT_init(void)
-{
-  return;
-}
-
 static const char sigma[16] = "expand 32-byte k";
 static const char tau[16] = "expand 16-byte k";
 
-void ECRYPT_keysetup(ECRYPT_ctx *x,const u8 *k,u32 kbits,u32 ivbits)
+void
+chacha_keysetup(struct chacha_ctx *x,const unsigned char *k,uint32_t kbits)
 {
   const char *constants;
 
@@ -49,21 +76,24 @@ void ECRYPT_keysetup(ECRYPT_ctx *x,const u8 *k,u32 kbits,u32 ivbits)
   x->input[3] = U8TO32_LITTLE(constants + 12);
 }
 
-void ECRYPT_ivsetup(ECRYPT_ctx *x,const u8 *iv)
+void
+chacha_ivsetup(struct chacha_ctx *x, const unsigned char *iv, const unsigned char *counter)
 {
-  x->input[12] = 0;
-  x->input[13] = 0;
-  x->input[14] = U8TO32_LITTLE(iv + 0);
-  x->input[15] = U8TO32_LITTLE(iv + 4);
+  x->input[12] = counter == NULL ? 0 : U8TO32_LITTLE(counter + 0);
+  //x->input[13] = counter == NULL ? 0 : U8TO32_LITTLE(counter + 4);
+  x->input[13] = U8TO32_LITTLE(iv + 0);
+  x->input[14] = U8TO32_LITTLE(iv + 4);
+  x->input[15] = U8TO32_LITTLE(iv + 8);
 }
 
-void ECRYPT_encrypt_bytes(ECRYPT_ctx *x,const u8 *m,u8 *c,u32 bytes)
+void
+chacha_encrypt_bytes(struct chacha_ctx *x,const unsigned char *m,unsigned char *c,uint32_t bytes)
 {
-  u32 x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15;
-  u32 j0, j1, j2, j3, j4, j5, j6, j7, j8, j9, j10, j11, j12, j13, j14, j15;
-  u8 *ctarget;
-  u8 tmp[64];
-  int i;
+  uint32_t x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15;
+  uint32_t j0, j1, j2, j3, j4, j5, j6, j7, j8, j9, j10, j11, j12, j13, j14, j15;
+  unsigned char *ctarget = NULL;
+  unsigned char tmp[64];
+  u_int i;
 
   if (!bytes) return;
 
@@ -86,7 +116,11 @@ void ECRYPT_encrypt_bytes(ECRYPT_ctx *x,const u8 *m,u8 *c,u32 bytes)
 
   for (;;) {
     if (bytes < 64) {
+#if (USE_MEMCPY == 1)
+      memcpy(tmp, m, bytes);
+#else
       for (i = 0;i < bytes;++i) tmp[i] = m[i];
+#endif
       m = tmp;
       ctarget = c;
       c = tmp;
@@ -176,7 +210,11 @@ void ECRYPT_encrypt_bytes(ECRYPT_ctx *x,const u8 *m,u8 *c,u32 bytes)
 
     if (bytes <= 64) {
       if (bytes < 64) {
+#if (USE_MEMCPY == 1)
+        memcpy(ctarget, c, bytes);
+#else
         for (i = 0;i < bytes;++i) ctarget[i] = c[i];
+#endif
       }
       x->input[12] = j12;
       x->input[13] = j13;
@@ -186,59 +224,4 @@ void ECRYPT_encrypt_bytes(ECRYPT_ctx *x,const u8 *m,u8 *c,u32 bytes)
     c += 64;
     m += 64;
   }
-}
-
-void ECRYPT_decrypt_bytes(ECRYPT_ctx *x,const u8 *c,u8 *m,u32 bytes)
-{
-  ECRYPT_encrypt_bytes(x,c,m,bytes);
-}
-
-void ECRYPT_keystream_bytes(ECRYPT_ctx *x,u8 *stream,u32 bytes)
-{
-  u32 i;
-  for (i = 0;i < bytes;++i) stream[i] = 0;
-  ECRYPT_encrypt_bytes(x,stream,stream,bytes);
-}
-
-void hchacha20(ECRYPT_ctx *x,u8 *c)
-{
-  u32 x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15;
-  int i;
-
-  x0 = x->input[0];
-  x1 = x->input[1];
-  x2 = x->input[2];
-  x3 = x->input[3];
-  x4 = x->input[4];
-  x5 = x->input[5];
-  x6 = x->input[6];
-  x7 = x->input[7];
-  x8 = x->input[8];
-  x9 = x->input[9];
-  x10 = x->input[10];
-  x11 = x->input[11];
-  x12 = x->input[12];
-  x13 = x->input[13];
-  x14 = x->input[14];
-  x15 = x->input[15];
-
-    for (i = 20;i > 0;i -= 2) {
-      QUARTERROUND( x0, x4, x8,x12)
-      QUARTERROUND( x1, x5, x9,x13)
-      QUARTERROUND( x2, x6,x10,x14)
-      QUARTERROUND( x3, x7,x11,x15)
-      QUARTERROUND( x0, x5,x10,x15)
-      QUARTERROUND( x1, x6,x11,x12)
-      QUARTERROUND( x2, x7, x8,x13)
-      QUARTERROUND( x3, x4, x9,x14)
-    }
-
-    U32TO8_LITTLE(c + 0,x0);
-    U32TO8_LITTLE(c + 4,x1);
-    U32TO8_LITTLE(c + 8,x2);
-    U32TO8_LITTLE(c + 12,x3);
-    U32TO8_LITTLE(c + 16,x12);
-    U32TO8_LITTLE(c + 20,x13);
-    U32TO8_LITTLE(c + 24,x14);
-    U32TO8_LITTLE(c + 28,x15);
 }

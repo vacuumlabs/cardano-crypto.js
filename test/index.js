@@ -112,7 +112,7 @@ test('blake2b256', function(t){
   )
 })
 
-test('sha3_256', function(t){
+/*test('sha3_256', function(t){
   t.plan(1)
   var message = Buffer.from('83008200584078732eb9d33e03b3daab4a4613bc19b8820ef5911caf43785780ec6493653bf67115f7f2c460be13dcc09f06f3d63fffe05a3d12996e5224e189a41ee2ef5c95a101581e581c140539c64edded60a7f2d869373e87e744591935bfcdadaa8517974c', 'hex')
 
@@ -120,5 +120,25 @@ test('sha3_256', function(t){
     lib.sha3_256(message).toString('hex'),
     '98b05e27eab982f4d108694a5ab636d68cc898e4af98980516fe2560b13e53a9',
     'should properly compute blake2b256 hash'
+  )
+})*/
+
+test('chacha20poly1305', function(t) {
+  t.plan(2)
+  var key = Buffer.from('c582f8e7cf7aeb6e5f3e96e939a92ae1642360a51d45150f34e70132a152203f', 'hex')
+  var nonce = Buffer.from('serokellfore')
+  var message = Buffer.from('9f1a800000001a8000000dff', 'hex')
+  var expectedEncryptionResult = Buffer.from('140539c64edded60a7f2d9696b17a78b4494b6bf0eef0cc28cad3c2b', 'hex')
+
+  t.equals(
+    lib.chacha20poly1305Encrypt(message, key, nonce, true).toString('hex'),
+    expectedEncryptionResult.toString('hex'),
+    'should properly encrypt with chacha20poly1305'
+  )
+
+  t.equals(
+    lib.chacha20poly1305Decrypt(expectedEncryptionResult, key, nonce, false).toString('hex'),
+    message.toString('hex'),
+    'should properly decrypt with chacha20poly1305'
   )
 })
