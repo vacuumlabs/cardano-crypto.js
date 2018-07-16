@@ -34,8 +34,8 @@ void derive_public(const unsigned char *parent_public_key, const unsigned char *
 }
 
 EMSCRIPTEN_KEEPALIVE
-int blake2b256(const unsigned char *in, size_t inlen, unsigned char *out){
-  return blake2b(out, 32, in, inlen, NULL, 0);
+int blake2b_emscripten(const unsigned char *in, size_t inlen, unsigned char *out, size_t out_len){
+  return blake2b(out, out_len, in, inlen, NULL, 0);
 }
 
 EMSCRIPTEN_KEEPALIVE

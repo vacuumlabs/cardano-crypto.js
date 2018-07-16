@@ -141,7 +141,7 @@ function mnemonicToHashSeed(mnemonic) {
 
   const ent = Buffer.from(bip39.mnemonicToEntropy(mnemonic), 'hex')
 
-  return cborEncodeBuffer(blake2b256(cborEncodeBuffer(ent)))
+  return cborEncodeBuffer(blake2b(cborEncodeBuffer(ent), 32))
 }
 
 function walletSecretFromMnemonic(mnemonic) {
@@ -224,18 +224,18 @@ function derivePublic(parentExtPubKey, index, derivationMode) {
   return Buffer.concat([new Buffer(childPubKeyArr), new Buffer(childChainCodeArr)])
 }
 
-function blake2b256(input) {
+function blake2b(input, outputLen) {
   validateBuffer(input)
 
   var inputLen = input.length
   var inputArrPtr = Module._malloc(inputLen)
   var inputArr = new Uint8Array(Module.HEAPU8.buffer, inputArrPtr, inputLen)
-  var outputArrPtr = Module._malloc(32)
-  var outputArr = new Uint8Array(Module.HEAPU8.buffer, outputArrPtr, 32)
+  var outputArrPtr = Module._malloc(outputLen)
+  var outputArr = new Uint8Array(Module.HEAPU8.buffer, outputArrPtr, outputLen)
 
   inputArr.set(input)
 
-  Module._blake2b256(inputArrPtr, inputLen, outputArrPtr)
+  Module._blake2b_emscripten(inputArrPtr, inputLen, outputArrPtr, outputLen)
 
   Module._free(inputArrPtr)
   Module._free(outputArrPtr)
@@ -271,7 +271,7 @@ function cardanoMemoryCombine(input, password) {
     return input
   }
 
-  var transformedPassword = blake2b256(Buffer.from(password, 'utf-8'))
+  var transformedPassword = blake2b(Buffer.from(password, 'utf-8'), 32)
   var transformedPasswordLen = transformedPassword.length
   var transformedPasswordArrPtr = Module._malloc(transformedPasswordLen)
   var transformedPasswordArr = new Uint8Array(Module.HEAPU8.buffer, transformedPasswordArrPtr, transformedPasswordLen)
@@ -392,7 +392,7 @@ module.exports = {
   sha3_256,
   chacha20poly1305Encrypt,
   chacha20poly1305Decrypt,
-  blake2b256,
+  blake2b,
   walletSecretFromMnemonic,
   cardanoMemoryCombine,
 }

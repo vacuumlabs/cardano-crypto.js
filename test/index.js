@@ -102,13 +102,13 @@ test('key nonhardened derivation', function(t){
   )
 })
 
-test('blake2b256', function(t){
+test('blake2b', function(t){
   t.plan(1)
 
   t.equals(
-    lib.blake2b256(sampleMessage).toString('hex'),
+    lib.blake2b(sampleMessage, 32).toString('hex'),
     'a21cf4b3604cf4b2bc53e6f88f6a4d75ef5ff4ab415f3e99aea6b61c8249c4d0',
-    'should properly compute blake2b256 hash'
+    'should properly compute blake2b hash'
   )
 })
 
