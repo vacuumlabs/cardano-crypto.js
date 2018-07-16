@@ -1,4 +1,3 @@
-var glob = require('glob')
 var exec = require('child_process').exec
 var fs = require('fs')
 

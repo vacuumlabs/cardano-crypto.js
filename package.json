@@ -23,7 +23,6 @@
   },
   "homepage": "https://github.com/vacuumlabs/cardano-crypto.js#readme",
   "devDependencies": {
-    "glob": "^7.0.3",
     "tape": "^4.9.1"
   },
   "dependencies": {
