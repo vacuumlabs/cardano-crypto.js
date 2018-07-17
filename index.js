@@ -73,7 +73,7 @@ function sign(msg, walletSecret) {
   msgArr.set(msg)
   walletSecretArr.set(walletSecret)
 
-  Module._sign(walletSecretArrPtr, msgArrPtr, msgLen, sigPtr)
+  Module._emscripten_sign(walletSecretArrPtr, msgArrPtr, msgLen, sigPtr)
   Module._free(msgArrPtr)
   Module._free(walletSecretArrPtr)
   Module._free(sigPtr)
@@ -98,7 +98,7 @@ function verify(msg, publicKey, sig) {
   publicKeyArr.set(publicKey)
   sigArr.set(sig)
 
-  var result = Module._verify(msgArrPtr, msgLen, publicKeyArrPtr, sigPtr) === 0
+  var result = Module._emscripten_verify(msgArrPtr, msgLen, publicKeyArrPtr, sigPtr) === 0
 
   Module._free(msgArrPtr)
   Module._free(publicKeyArrPtr)
@@ -121,7 +121,7 @@ function walletSecretFromSeed(seed, chainCode) {
   seedArr.set(seed)
   chainCodeArr.set(chainCode)
 
-  const returnCode = Module._wallet_secret_from_seed(seedArrPtr, chainCodeArrPtr, walletSecretArrPtr)
+  const returnCode = Module._emscripten_wallet_secret_from_seed(seedArrPtr, chainCodeArrPtr, walletSecretArrPtr)
 
   Module._free(seedArrPtr)
   Module._free(chainCodeArrPtr)
@@ -188,10 +188,13 @@ function derivePrivate(parentKey, index, derivationMode) {
   var parentKeyArr = new Uint8Array(Module.HEAPU8.buffer, parentKeyArrPtr, 128)
   var childKeyArrPtr = Module._malloc(128)
   var childKeyArr = new Uint8Array(Module.HEAPU8.buffer, childKeyArrPtr, 128)
+
   parentKeyArr.set(parentKey)
-  Module._derive_private(parentKeyArrPtr, index, childKeyArrPtr, derivationMode)
+
+  Module._emscripten_derive_private(parentKeyArrPtr, index, childKeyArrPtr, derivationMode)
   Module._free(parentKeyArrPtr)
   Module._free(childKeyArrPtr)
+
   return new Buffer(childKeyArr)
 }
 
@@ -216,7 +219,7 @@ function derivePublic(parentExtPubKey, index, derivationMode) {
   parentPubKeyArr.set(parentPubKey)
   parentChainCodeArr.set(parentChainCode)
 
-  Module._derive_public(parentPubKeyArrPtr, parentChainCodeArrPtr, index, childPubKeyArrPtr, childChainCodeArrPtr, derivationMode)
+  Module._emscripten_derive_public(parentPubKeyArrPtr, parentChainCodeArrPtr, index, childPubKeyArrPtr, childChainCodeArrPtr, derivationMode)
 
   Module._free(parentPubKeyArrPtr)
   Module._free(parentChainCodeArrPtr)
@@ -237,7 +240,7 @@ function blake2b(input, outputLen) {
 
   inputArr.set(input)
 
-  Module._blake2b_emscripten(inputArrPtr, inputLen, outputArrPtr, outputLen)
+  Module._emscripten_blake2b(inputArrPtr, inputLen, outputArrPtr, outputLen)
 
   Module._free(inputArrPtr)
   Module._free(outputArrPtr)
@@ -257,7 +260,7 @@ function sha3_256(input) {
 
   inputArr.set(input)
 
-  Module._sha3_256(inputArrPtr, inputLen, outputArrPtr)
+  Module._emscripten_sha3_256(inputArrPtr, inputLen, outputArrPtr)
 
   Module._free(inputArrPtr)
   Module._free(outputArrPtr)
@@ -270,7 +273,7 @@ function hmac_sha512(initKey, inputs) {
   validateArray(inputs)
   inputs.map(validateBuffer)
 
-  var ctxLen = Module._size_of_hmac_sha512_ctx()
+  var ctxLen = Module._emscripten_size_of_hmac_sha512_ctx()
   var ctxArrPtr = Module._malloc(ctxLen)
   var ctxArr = new Uint8Array(Module.HEAPU8.buffer, ctxArrPtr, ctxLen)
 
@@ -280,7 +283,7 @@ function hmac_sha512(initKey, inputs) {
 
   initKeyArr.set(initKey)
   
-  Module._hmac_sha512_init(ctxArrPtr, initKeyArrPtr, initKeyLen)
+  Module._emscripten_hmac_sha512_init(ctxArrPtr, initKeyArrPtr, initKeyLen)
 
   for (var i = 0; i < inputs.length; i++) {
     var inputLen = inputs[i].length
@@ -289,7 +292,7 @@ function hmac_sha512(initKey, inputs) {
 
     inputArr.set(inputs[i])
 
-    Module._hmac_sha512_update(ctxArrPtr, inputArrPtr, inputLen)
+    Module._emscripten_hmac_sha512_update(ctxArrPtr, inputArrPtr, inputLen)
 
     Module._free(inputArrPtr)
   }
@@ -298,7 +301,7 @@ function hmac_sha512(initKey, inputs) {
   var outputArrPtr = Module._malloc(outputLen)
   var outputArr = new Uint8Array(Module.HEAPU8.buffer, outputArrPtr, outputLen)
 
-  Module._hmac_sha512_final(ctxArrPtr, outputArrPtr)
+  Module._emscripten_hmac_sha512_final(ctxArrPtr, outputArrPtr)
 
   Module._free(initKeyArrPtr)
   Module._free(ctxArrPtr)
@@ -330,7 +333,7 @@ function cardanoMemoryCombine(input, password) {
   inputArr.set(input)
   transformedPasswordArr.set(transformedPassword)
 
-  Module._cardano_memory_combine(transformedPasswordArrPtr, transformedPasswordLen, inputArrPtr, outputArrPtr, inputLen)
+  Module._emscripten_cardano_memory_combine(transformedPasswordArrPtr, transformedPasswordLen, inputArrPtr, outputArrPtr, inputLen)
 
   Module._free(inputArrPtr)
   Module._free(outputArrPtr)
@@ -365,7 +368,7 @@ function chacha20poly1305Encrypt(input, key, nonce) {
   keyArr.set(key)
   nonceArr.set(nonce)
 
-  var resultCode = Module._chacha20poly1305_enc(keyArrPtr, nonceArrPtr, inputArrPtr, inputLen, outputArrPtr, outputArrPtr + inputLen, tagLen, 1)
+  var resultCode = Module._emscripten_chacha20poly1305_enc(keyArrPtr, nonceArrPtr, inputArrPtr, inputLen, outputArrPtr, outputArrPtr + inputLen, tagLen, 1)
 
   Module._free(inputArrPtr)
   Module._free(keyArrPtr)
@@ -413,7 +416,7 @@ function chacha20poly1305Decrypt(input, key, nonce) {
   keyArr.set(key)
   nonceArr.set(nonce)
 
-  var resultCode = Module._chacha20poly1305_enc(keyArrPtr, nonceArrPtr, inputArrPtr, inputLen, outputArrPtr, tagArrPtr, tagLen, 0)
+  var resultCode = Module._emscripten_chacha20poly1305_enc(keyArrPtr, nonceArrPtr, inputArrPtr, inputLen, outputArrPtr, tagArrPtr, tagLen, 0)
 
   Module._free(inputArrPtr)
   Module._free(keyArrPtr)
