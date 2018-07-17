@@ -1,5 +1,5 @@
 var Module = require('./lib.js')
-var bip39 = require('bip39')
+var bip39 = require('bip39-light')
 
 function validateDerivationMode(input) {
   if (input !== 1 && input !== 2) {
