@@ -45,7 +45,7 @@ var childWalletSecret = lib.derivePublic(parentWalletPublicKey, 1, 1)
 * `Buffer walletSecretFromMnemonic(String mnemonic)`
 * `Buffer derivePrivate(Buffer parentKey, int index, int derivationMode)`
 * `Buffer derivePublic(Buffer parentExtPubKey, int index, int derivationMode)`
-* `Buffer blake2b256(Buffer input)`
+* `Buffer blake2b(Buffer input, outputLen)`
 * `Buffer sha3_256(Buffer input)`
 * `Buffer chacha20poly1305Encrypt(Buffer input, Buffer key, Buffer nonce)`
 * `Buffer chacha20poly1305Decrypt(Buffer input, Buffer key, Buffer nonce)`
