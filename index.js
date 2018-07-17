@@ -3,6 +3,7 @@ var bip39 = require('bip39-light')
 var Module = require('./lib.js')
 var crc32 = require('./utils/crc32')
 var base58 = require('./utils/base58')
+var scrypt = require('./utils/scrypt-async')
 
 
 function validateDerivationMode(input) {
@@ -290,7 +291,7 @@ function hmac_sha512(initKey, inputs) {
   var outputArr = new Uint8Array(Module.HEAPU8.buffer, outputArrPtr, outputLen)
 
   initKeyArr.set(initKey)
-  
+
   Module._emscripten_hmac_sha512_init(ctxArrPtr, initKeyArrPtr, initKeyLen)
 
   for (var i = 0; i < inputs.length; i++) {
@@ -448,4 +449,5 @@ module.exports = {
   cardanoMemoryCombine,
   base58,
   crc32,
+  scrypt,
 }

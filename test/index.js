@@ -14,6 +14,7 @@ var sampleHardenedChildKeyMode2 = Buffer.from('9049fc9cd910252e75dbcac63289db674
 var sampleNonhardenedIndex = 1
 var sampleNonHardenedChildKeyMode1 = Buffer.from('30c87a45fe4a8f143478db0d8db6cf963bdfb559f2a050fceae40bc7e97333f832635e6d3dd3409b00373d4f9b49eb8e9444a4ea8e380397e9711a95b940ecd7', 'hex')
 var sampleNonHardenedChildKeyMode2 = Buffer.from('19ad2602cee521db72c4ad41c2daf36ca46cf8e80733822fa0f79c8013de8e6fed4f3181d9f544612c5f15e01db0745111b8ee7fc87b784ee083ad314e094662', 'hex')
+var sampleScryptDerivedKey = '5012b74fca8ec8a4a0a62ffdeeee959d'
 
 test('wallet secret from mnemonic', function(t) {
   t.plan(1)
@@ -159,5 +160,26 @@ test('cardanoMemoryCombine', function(t) {
     lib.cardanoMemoryCombine(input, '').toString('hex'),
     input.toString('hex'),
     'should properly combine memory with empty passphrase'
+  )
+})
+
+test('scrypt', function (t) {
+  t.plan(1)
+
+  var key = undefined
+  lib.scrypt('mypassword', 'saltysalt', {
+    N: 16384,
+    r: 8,
+    p: 1,
+    dkLen: 16,
+    encoding: 'hex'
+  }, function(derivedKey) {
+    key = derivedKey
+  })
+
+  t.equals(
+    key,
+    sampleScryptDerivedKey,
+    'should properly derive key by scrypt'
   )
 })
