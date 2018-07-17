@@ -278,8 +278,12 @@ function hmac_sha512(initKey, inputs) {
   var ctxArr = new Uint8Array(Module.HEAPU8.buffer, ctxArrPtr, ctxLen)
 
   var initKeyLen = initKey.length
-  var initKeyArrPtr = Module._malloc(ctxLen)
+  var initKeyArrPtr = Module._malloc(initKeyLen)
   var initKeyArr = new Uint8Array(Module.HEAPU8.buffer, initKeyArrPtr, initKeyLen)
+
+  var outputLen = 64
+  var outputArrPtr = Module._malloc(outputLen)
+  var outputArr = new Uint8Array(Module.HEAPU8.buffer, outputArrPtr, outputLen)
 
   initKeyArr.set(initKey)
   
@@ -287,7 +291,7 @@ function hmac_sha512(initKey, inputs) {
 
   for (var i = 0; i < inputs.length; i++) {
     var inputLen = inputs[i].length
-    var inputArrPtr = Module._malloc(inputLen)
+    inputArrPtr = Module._malloc(inputLen)
     var inputArr = new Uint8Array(Module.HEAPU8.buffer, inputArrPtr, inputLen)
 
     inputArr.set(inputs[i])
@@ -296,10 +300,6 @@ function hmac_sha512(initKey, inputs) {
 
     Module._free(inputArrPtr)
   }
-
-  var outputLen = 64
-  var outputArrPtr = Module._malloc(outputLen)
-  var outputArr = new Uint8Array(Module.HEAPU8.buffer, outputArrPtr, outputLen)
 
   Module._emscripten_hmac_sha512_final(ctxArrPtr, outputArrPtr)
 
