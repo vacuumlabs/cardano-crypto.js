@@ -1,6 +1,5 @@
 var Module = require('./lib.js')
 var bip39 = require('bip39')
-var crypto = require('crypto')
 
 function validateDerivationMode(input) {
   if (input !== 1 && input !== 2) {
@@ -15,6 +14,12 @@ function validateBuffer(input, expectedLength) {
 
   if (expectedLength && input.length !== expectedLength) {
     throw new Error('Invalid buffer length')
+  }
+}
+
+function validateArray(input) {
+  if (typeof(input) !== typeof([])) {
+    throw new Error('not an array!')
   }
 }
 
@@ -150,12 +155,9 @@ function walletSecretFromMnemonic(mnemonic) {
 
   for (var i = 1; result === undefined && i <= 1000; i++) {
     try {
-      var hmac = crypto.createHmac('sha512', hashSeed)
-      hmac.update(`Root Seed Chain ${i}`)
-
-      var digest = hmac.digest('hex')
-      var seed = Buffer.from(digest.substr(0, 64), 'hex')
-      var chainCode = Buffer.from(digest.substr(64, 64), 'hex')
+      var digest = hmac_sha512(hashSeed, [Buffer.from(`Root Seed Chain ${i}`, 'ascii')])
+      var seed = digest.slice(0, 32)
+      var chainCode = digest.slice(32, 64)
 
       result = walletSecretFromSeed(seed, chainCode)
 
@@ -258,6 +260,48 @@ function sha3_256(input) {
   Module._sha3_256(inputArrPtr, inputLen, outputArrPtr)
 
   Module._free(inputArrPtr)
+  Module._free(outputArrPtr)
+
+  return Buffer.from(outputArr)
+}
+
+function hmac_sha512(initKey, inputs) {
+  validateBuffer(initKey)
+  validateArray(inputs)
+  inputs.map(validateBuffer)
+
+  var ctxLen = Module._size_of_hmac_sha512_ctx()
+  var ctxArrPtr = Module._malloc(ctxLen)
+  var ctxArr = new Uint8Array(Module.HEAPU8.buffer, ctxArrPtr, ctxLen)
+
+  var initKeyLen = initKey.length
+  var initKeyArrPtr = Module._malloc(ctxLen)
+  var initKeyArr = new Uint8Array(Module.HEAPU8.buffer, initKeyArrPtr, initKeyLen)
+
+  initKeyArr.set(initKey)
+  
+  Module._hmac_sha512_init(ctxArrPtr, initKeyArrPtr, initKeyLen)
+
+  for (var i = 0; i < inputs.length; i++) {
+    var inputLen = inputs[i].length
+    var inputArrPtr = Module._malloc(inputLen)
+    var inputArr = new Uint8Array(Module.HEAPU8.buffer, inputArrPtr, inputLen)
+
+    inputArr.set(inputs[i])
+
+    Module._hmac_sha512_update(ctxArrPtr, inputArrPtr, inputLen)
+
+    Module._free(inputArrPtr)
+  }
+
+  var outputLen = 64
+  var outputArrPtr = Module._malloc(outputLen)
+  var outputArr = new Uint8Array(Module.HEAPU8.buffer, outputArrPtr, outputLen)
+
+  Module._hmac_sha512_final(ctxArrPtr, outputArrPtr)
+
+  Module._free(initKeyArrPtr)
+  Module._free(ctxArrPtr)
   Module._free(outputArrPtr)
 
   return Buffer.from(outputArr)

@@ -3,6 +3,7 @@
 #endif
 #include "vendor/cbits/ed25519/ed25519.h"
 #include "vendor/cbits/encrypted_sign.h"
+#include "vendor/cbits/hmac.h"
 #include "vendor/cbits/cryptonite_cbits/blake2/ref/blake2.h"
 #include "vendor/cbits/chachapoly/chachapoly.h"
 #include "vendor/cbits/cryptonite_cbits/cryptonite_sha3.h"
@@ -63,10 +64,21 @@ int chacha20poly1305_enc(const uint8_t *key, const uint8_t *nonce, uint8_t *in, 
 }
 
 EMSCRIPTEN_KEEPALIVE
-int scrypt(const uint8_t *key, const uint8_t *nonce, uint8_t *in, size_t in_len, uint8_t *out, uint8_t *tag, size_t tag_len, int encrypt){
-  struct chachapoly_ctx ctx;
-  memset(&ctx, 0, sizeof(struct chachapoly_ctx));
+size_t size_of_hmac_sha512_ctx(){
+  return sizeof(HMAC_sha512_ctx);
+}
 
-  chachapoly_init(&ctx, key, 256);
-  return chachapoly_crypt(&ctx, nonce, NULL, 0, in, in_len, out, tag, tag_len, encrypt);
+EMSCRIPTEN_KEEPALIVE
+void hmac_sha512_init(HMAC_sha512_ctx *ctx, const uint8_t *in, size_t in_len){
+  HMAC_sha512_init(ctx, in, in_len);
+}
+
+EMSCRIPTEN_KEEPALIVE
+void hmac_sha512_update(HMAC_sha512_ctx *ctx, const uint8_t *in, size_t in_len){
+  HMAC_sha512_update(ctx, in, in_len);
+}
+
+EMSCRIPTEN_KEEPALIVE
+void hmac_sha512_final(HMAC_sha512_ctx *ctx, uint8_t *out){
+  HMAC_sha512_final(ctx, out);
 }
