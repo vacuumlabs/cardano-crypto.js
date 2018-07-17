@@ -26,6 +26,6 @@
     "tape": "^4.9.1"
   },
   "dependencies": {
-    "bip39-light": "^1.0.5"
+    "bip39-light": "^1.0.6"
   }
 }
