@@ -291,7 +291,7 @@ function hmac_sha512(initKey, inputs) {
 
   for (var i = 0; i < inputs.length; i++) {
     var inputLen = inputs[i].length
-    inputArrPtr = Module._malloc(inputLen)
+    var inputArrPtr = Module._malloc(inputLen)
     var inputArr = new Uint8Array(Module.HEAPU8.buffer, inputArrPtr, inputLen)
 
     inputArr.set(inputs[i])
