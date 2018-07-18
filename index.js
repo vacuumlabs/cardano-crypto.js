@@ -184,6 +184,8 @@ function walletSecretFromMnemonic(mnemonic) {
   return result
 }
 
+
+
 function derivePrivate(parentKey, index, derivationMode) {
   validateBuffer(parentKey, 128)
   validateDerivationIndex(index)
@@ -224,12 +226,16 @@ function derivePublic(parentExtPubKey, index, derivationMode) {
   parentPubKeyArr.set(parentPubKey)
   parentChainCodeArr.set(parentChainCode)
 
-  Module._emscripten_derive_public(parentPubKeyArrPtr, parentChainCodeArrPtr, index, childPubKeyArrPtr, childChainCodeArrPtr, derivationMode)
+  var resultCode = Module._emscripten_derive_public(parentPubKeyArrPtr, parentChainCodeArrPtr, index, childPubKeyArrPtr, childChainCodeArrPtr, derivationMode)
 
   Module._free(parentPubKeyArrPtr)
   Module._free(parentChainCodeArrPtr)
   Module._free(parentPubKeyArrPtr)
   Module._free(parentChainCodeArrPtr)
+
+  if (resultCode !== 0) {
+    throw Error(`derivePublic has exited with code ${resultCode}`)
+  }
 
   return Buffer.concat([new Buffer(childPubKeyArr), new Buffer(childChainCodeArr)])
 }

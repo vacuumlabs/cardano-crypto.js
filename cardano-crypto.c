@@ -30,8 +30,8 @@ void emscripten_derive_private(const unsigned char *parent_private_key, uint32_t
 }
 
 EMSCRIPTEN_KEEPALIVE
-void emscripten_derive_public(const unsigned char *parent_public_key, const unsigned char *parent_chain_code, uint32_t index, const unsigned char *child_public_key, const unsigned char *child_chain_code, uint32_t mode){
-  wallet_encrypted_derive_public((uint8_t*) parent_public_key, (uint8_t*) parent_chain_code, index, (uint8_t*) child_public_key, (uint8_t*) child_chain_code, mode);
+int emscripten_derive_public(const unsigned char *parent_public_key, const unsigned char *parent_chain_code, uint32_t index, const unsigned char *child_public_key, const unsigned char *child_chain_code, uint32_t mode){
+  return wallet_encrypted_derive_public((uint8_t*) parent_public_key, (uint8_t*) parent_chain_code, index, (uint8_t*) child_public_key, (uint8_t*) child_chain_code, mode);
 }
 
 EMSCRIPTEN_KEEPALIVE
