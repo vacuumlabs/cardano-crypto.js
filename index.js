@@ -1,5 +1,9 @@
-var Module = require('./lib.js')
 var bip39 = require('bip39-light')
+
+var Module = require('./lib.js')
+var crc32 = require('./utils/crc32')
+var base58 = require('./utils/base58')
+
 
 function validateDerivationMode(input) {
   if (input !== 1 && input !== 2) {
@@ -442,4 +446,6 @@ module.exports = {
   blake2b,
   walletSecretFromMnemonic,
   cardanoMemoryCombine,
+  base58,
+  crc32,
 }
