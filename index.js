@@ -1,19 +1,21 @@
-var bip39 = require('bip39-light')
+const bip39 = require('bip39-light')
 
-var Module = require('./lib.js')
-var crc32 = require('./utils/crc32')
-var base58 = require('./utils/base58')
-var scrypt = require('./utils/scrypt-async')
+const Module = require('./lib.js')
+const crc32 = require('./utils/crc32')
+const base58 = require('./utils/base58')
+const scrypt = require('./utils/scrypt-async')
+const pbkdf2Sync = require('pbkdf2').pbkdf2Sync
 
+const HARDENED_THRESHOLD = 0x80000000
 
-function validateDerivationMode(input) {
+function validateDerivationScheme(input) {
   if (input !== 1 && input !== 2) {
-    throw new Error('invalid derivation mode!')
+    throw new Error('invalid derivation scheme!')
   }
 }
 
 function validateBuffer(input, expectedLength) {
-  if(!Buffer.isBuffer(input)){
+  if (!Buffer.isBuffer(input)) {
     throw new Error('not buffer!')
   }
 
@@ -23,7 +25,7 @@ function validateBuffer(input, expectedLength) {
 }
 
 function validateArray(input) {
-  if (typeof(input) !== typeof([])) {
+  if (typeof input !== typeof []) {
     throw new Error('not an array!')
   }
 }
@@ -34,23 +36,25 @@ function validateDerivationIndex(input) {
   }
 }
 
-function validateBool(input) {
-  if (typeof(input) !== typeof(true)) {
-    throw new Error('not a boolean!')
+function validateString(input) {
+  if (typeof input !== typeof 'aa') {
+    throw new Error('not a string!')
   }
 }
 
-function validateString(input) {
-  if (typeof(input) !== typeof('aa')) {
-    throw new Error('not a string!')
+function validateMnemonic(input) {
+  if (!bip39.validateMnemonic(input)) {
+    const e = new Error('Invalid or unsupported mnemonic format:')
+    e.name = 'InvalidArgumentException'
+    throw e
   }
 }
 
 function cborEncodeBuffer(input) {
   validateBuffer(input)
 
-  var len = input.length
-  var cborPrefix = []
+  const len = input.length
+  let cborPrefix = []
 
   if (len < 24) {
     cborPrefix = [0x40 + len]
@@ -67,13 +71,13 @@ function sign(msg, walletSecret) {
   validateBuffer(msg)
   validateBuffer(walletSecret, 128)
 
-  var msgLen = msg.length
-  var msgArrPtr = Module._malloc(msgLen)
-  var msgArr = new Uint8Array(Module.HEAPU8.buffer, msgArrPtr, msgLen)
-  var walletSecretArrPtr = Module._malloc(128)
-  var walletSecretArr = new Uint8Array(Module.HEAPU8.buffer, walletSecretArrPtr, 128)
-  var sigPtr = Module._malloc(64)
-  var sigArr = new Uint8Array(Module.HEAPU8.buffer, sigPtr, 64)
+  const msgLen = msg.length
+  const msgArrPtr = Module._malloc(msgLen)
+  const msgArr = new Uint8Array(Module.HEAPU8.buffer, msgArrPtr, msgLen)
+  const walletSecretArrPtr = Module._malloc(128)
+  const walletSecretArr = new Uint8Array(Module.HEAPU8.buffer, walletSecretArrPtr, 128)
+  const sigPtr = Module._malloc(64)
+  const sigArr = new Uint8Array(Module.HEAPU8.buffer, sigPtr, 64)
 
   msgArr.set(msg)
   walletSecretArr.set(walletSecret)
@@ -91,19 +95,19 @@ function verify(msg, publicKey, sig) {
   validateBuffer(publicKey, 32)
   validateBuffer(sig, 64)
 
-  var msgLen = msg.length
-  var msgArrPtr = Module._malloc(msgLen)
-  var msgArr = new Uint8Array(Module.HEAPU8.buffer, msgArrPtr, msgLen)
-  var publicKeyArrPtr = Module._malloc(32)
-  var publicKeyArr = new Uint8Array(Module.HEAPU8.buffer, publicKeyArrPtr, 32)
-  var sigPtr = Module._malloc(64)
-  var sigArr = new Uint8Array(Module.HEAPU8.buffer, sigPtr, 64)
+  const msgLen = msg.length
+  const msgArrPtr = Module._malloc(msgLen)
+  const msgArr = new Uint8Array(Module.HEAPU8.buffer, msgArrPtr, msgLen)
+  const publicKeyArrPtr = Module._malloc(32)
+  const publicKeyArr = new Uint8Array(Module.HEAPU8.buffer, publicKeyArrPtr, 32)
+  const sigPtr = Module._malloc(64)
+  const sigArr = new Uint8Array(Module.HEAPU8.buffer, sigPtr, 64)
 
   msgArr.set(msg)
   publicKeyArr.set(publicKey)
   sigArr.set(sig)
 
-  var result = Module._emscripten_verify(msgArrPtr, msgLen, publicKeyArrPtr, sigPtr) === 0
+  const result = Module._emscripten_verify(msgArrPtr, msgLen, publicKeyArrPtr, sigPtr) === 0
 
   Module._free(msgArrPtr)
   Module._free(publicKeyArrPtr)
@@ -116,12 +120,12 @@ function walletSecretFromSeed(seed, chainCode) {
   validateBuffer(seed, 32)
   validateBuffer(chainCode, 32)
 
-  var seedArrPtr = Module._malloc(32)
-  var seedArr = new Uint8Array(Module.HEAPU8.buffer, seedArrPtr, 32)
-  var chainCodeArrPtr = Module._malloc(32)
-  var chainCodeArr = new Uint8Array(Module.HEAPU8.buffer, chainCodeArrPtr, 32)
-  var walletSecretArrPtr = Module._malloc(128)
-  var walletSecretArr = new Uint8Array(Module.HEAPU8.buffer, walletSecretArrPtr, 128)
+  const seedArrPtr = Module._malloc(32)
+  const seedArr = new Uint8Array(Module.HEAPU8.buffer, seedArrPtr, 32)
+  const chainCodeArrPtr = Module._malloc(32)
+  const chainCodeArr = new Uint8Array(Module.HEAPU8.buffer, chainCodeArrPtr, 32)
+  const walletSecretArrPtr = Module._malloc(128)
+  const walletSecretArr = new Uint8Array(Module.HEAPU8.buffer, walletSecretArrPtr, 128)
 
   seedArr.set(seed)
   chainCodeArr.set(chainCode)
@@ -142,27 +146,30 @@ function walletSecretFromSeed(seed, chainCode) {
   return new Buffer(walletSecretArr)
 }
 
-function mnemonicToHashSeed(mnemonic) {
-  if (!bip39.validateMnemonic(mnemonic)) {
-    const e = new Error('Invalid or unsupported mnemonic format')
-    e.name = 'InvalidArgumentException'
-    throw e
+function walletSecretFromMnemonic(mnemonic, derivationScheme) {
+  validateDerivationScheme(derivationScheme)
+
+  if (derivationScheme === 1) {
+    return walletSecretFromMnemonicV1(mnemonic)
+  } else if (derivationScheme === 2) {
+    return walletSecretFromMnemonicV2(mnemonic, '')
+  } else {
+    throw Error(`Derivation scheme ${derivationScheme} not implemented`)
   }
-
-  const ent = Buffer.from(bip39.mnemonicToEntropy(mnemonic), 'hex')
-
-  return cborEncodeBuffer(blake2b(cborEncodeBuffer(ent), 32))
 }
 
-function walletSecretFromMnemonic(mnemonic) {
-  var hashSeed = mnemonicToHashSeed(mnemonic)
-  var result
+function walletSecretFromMnemonicV1(mnemonic) {
+  validateMnemonic(mnemonic)
 
-  for (var i = 1; result === undefined && i <= 1000; i++) {
+  const entropy = Buffer.from(bip39.mnemonicToEntropy(mnemonic), 'hex')
+  const hashSeed = cborEncodeBuffer(blake2b(cborEncodeBuffer(entropy), 32))
+
+  let result
+  for (let i = 1; result === undefined && i <= 1000; i++) {
     try {
-      var digest = hmac_sha512(hashSeed, [Buffer.from(`Root Seed Chain ${i}`, 'ascii')])
-      var seed = digest.slice(0, 32)
-      var chainCode = digest.slice(32, 64)
+      const digest = hmac_sha512(hashSeed, [Buffer.from(`Root Seed Chain ${i}`, 'ascii')])
+      const seed = digest.slice(0, 32)
+      const chainCode = digest.slice(32, 64)
 
       result = walletSecretFromSeed(seed, chainCode)
 
@@ -176,7 +183,7 @@ function walletSecretFromMnemonic(mnemonic) {
   }
 
   if (result === undefined) {
-    var e = new Error('Secret key generation from mnemonic is looping forever')
+    const e = new Error('Secret key generation from mnemonic is looping forever')
     e.name = 'RuntimeException'
     throw e
   }
@@ -184,49 +191,89 @@ function walletSecretFromMnemonic(mnemonic) {
   return result
 }
 
+function walletSecretFromMnemonicV2(mnemonic, password) {
+  validateMnemonic(mnemonic)
+  const entropy = Buffer.from(bip39.mnemonicToEntropy(mnemonic), 'hex')
+  const xprv = pbkdf2Sync(password, entropy, 4096, 96, 'sha512')
 
+  xprv[0] &= 248
+  xprv[31] &= 31
+  xprv[31] |= 64
 
-function derivePrivate(parentKey, index, derivationMode) {
+  const publicKey = toPublic(xprv.slice(0, 64))
+
+  const rootSecret = Buffer.concat([xprv.slice(0, 64), publicKey, xprv.slice(64,)])
+
+  return derivePrivate(
+    derivePrivate(
+      rootSecret,
+      HARDENED_THRESHOLD + 44,
+      2
+    ),
+    HARDENED_THRESHOLD + 1815,
+    2
+  )
+}
+
+function toPublic(privateKey) {
+  validateBuffer(privateKey, 64)
+
+  const privateKeyArrPtr = Module._malloc(64)
+  const privateKeyArr = new Uint8Array(Module.HEAPU8.buffer, privateKeyArrPtr, 64)
+  const publicKeyArrPtr = Module._malloc(32)
+  const publicKeyArr = new Uint8Array(Module.HEAPU8.buffer, publicKeyArrPtr, 32)
+
+  privateKeyArr.set(privateKey)
+
+  Module._emscripten_to_public(privateKeyArrPtr, publicKeyArrPtr)
+
+  Module._free(privateKeyArrPtr)
+  Module._free(publicKeyArrPtr)
+
+  return new Buffer(publicKeyArr)
+}
+
+function derivePrivate(parentKey, index, derivationScheme) {
   validateBuffer(parentKey, 128)
   validateDerivationIndex(index)
-  validateDerivationMode(derivationMode)
+  validateDerivationScheme(derivationScheme)
 
-  var parentKeyArrPtr = Module._malloc(128)
-  var parentKeyArr = new Uint8Array(Module.HEAPU8.buffer, parentKeyArrPtr, 128)
-  var childKeyArrPtr = Module._malloc(128)
-  var childKeyArr = new Uint8Array(Module.HEAPU8.buffer, childKeyArrPtr, 128)
+  const parentKeyArrPtr = Module._malloc(128)
+  const parentKeyArr = new Uint8Array(Module.HEAPU8.buffer, parentKeyArrPtr, 128)
+  const childKeyArrPtr = Module._malloc(128)
+  const childKeyArr = new Uint8Array(Module.HEAPU8.buffer, childKeyArrPtr, 128)
 
   parentKeyArr.set(parentKey)
 
-  Module._emscripten_derive_private(parentKeyArrPtr, index, childKeyArrPtr, derivationMode)
+  Module._emscripten_derive_private(parentKeyArrPtr, index, childKeyArrPtr, derivationScheme)
   Module._free(parentKeyArrPtr)
   Module._free(childKeyArrPtr)
 
   return new Buffer(childKeyArr)
 }
 
-function derivePublic(parentExtPubKey, index, derivationMode) {
+function derivePublic(parentExtPubKey, index, derivationScheme) {
   validateBuffer(parentExtPubKey, 64)
   validateDerivationIndex(index)
-  validateDerivationMode(derivationMode)
+  validateDerivationScheme(derivationScheme)
 
-  var parentPubKey = parentExtPubKey.slice(0, 32)
-  var parentChainCode = parentExtPubKey.slice(32, 64)
+  const parentPubKey = parentExtPubKey.slice(0, 32)
+  const parentChainCode = parentExtPubKey.slice(32, 64)
 
-  var parentPubKeyArrPtr = Module._malloc(32)
-  var parentPubKeyArr = new Uint8Array(Module.HEAPU8.buffer, parentPubKeyArrPtr, 32)
-  var parentChainCodeArrPtr = Module._malloc(32)
-  var parentChainCodeArr = new Uint8Array(Module.HEAPU8.buffer, parentChainCodeArrPtr, 32)
+  const parentPubKeyArrPtr = Module._malloc(32)
+  const parentPubKeyArr = new Uint8Array(Module.HEAPU8.buffer, parentPubKeyArrPtr, 32)
+  const parentChainCodeArrPtr = Module._malloc(32)
+  const parentChainCodeArr = new Uint8Array(Module.HEAPU8.buffer, parentChainCodeArrPtr, 32)
 
-  var childPubKeyArrPtr = Module._malloc(32)
-  var childPubKeyArr = new Uint8Array(Module.HEAPU8.buffer, childPubKeyArrPtr, 32)
-  var childChainCodeArrPtr = Module._malloc(32)
-  var childChainCodeArr = new Uint8Array(Module.HEAPU8.buffer, childChainCodeArrPtr, 32)
+  const childPubKeyArrPtr = Module._malloc(32)
+  const childPubKeyArr = new Uint8Array(Module.HEAPU8.buffer, childPubKeyArrPtr, 32)
+  const childChainCodeArrPtr = Module._malloc(32)
+  const childChainCodeArr = new Uint8Array(Module.HEAPU8.buffer, childChainCodeArrPtr, 32)
 
   parentPubKeyArr.set(parentPubKey)
   parentChainCodeArr.set(parentChainCode)
 
-  var resultCode = Module._emscripten_derive_public(parentPubKeyArrPtr, parentChainCodeArrPtr, index, childPubKeyArrPtr, childChainCodeArrPtr, derivationMode)
+  const resultCode = Module._emscripten_derive_public(parentPubKeyArrPtr, parentChainCodeArrPtr, index, childPubKeyArrPtr, childChainCodeArrPtr, derivationScheme)
 
   Module._free(parentPubKeyArrPtr)
   Module._free(parentChainCodeArrPtr)
@@ -243,11 +290,11 @@ function derivePublic(parentExtPubKey, index, derivationMode) {
 function blake2b(input, outputLen) {
   validateBuffer(input)
 
-  var inputLen = input.length
-  var inputArrPtr = Module._malloc(inputLen)
-  var inputArr = new Uint8Array(Module.HEAPU8.buffer, inputArrPtr, inputLen)
-  var outputArrPtr = Module._malloc(outputLen)
-  var outputArr = new Uint8Array(Module.HEAPU8.buffer, outputArrPtr, outputLen)
+  const inputLen = input.length
+  const inputArrPtr = Module._malloc(inputLen)
+  const inputArr = new Uint8Array(Module.HEAPU8.buffer, inputArrPtr, inputLen)
+  const outputArrPtr = Module._malloc(outputLen)
+  const outputArr = new Uint8Array(Module.HEAPU8.buffer, outputArrPtr, outputLen)
 
   inputArr.set(input)
 
@@ -261,13 +308,13 @@ function blake2b(input, outputLen) {
 
 function sha3_256(input) {
   validateBuffer(input)
-  var inputLen = input.length
-  var inputArrPtr = Module._malloc(inputLen)
-  var inputArr = new Uint8Array(Module.HEAPU8.buffer, inputArrPtr, inputLen)
+  const inputLen = input.length
+  const inputArrPtr = Module._malloc(inputLen)
+  const inputArr = new Uint8Array(Module.HEAPU8.buffer, inputArrPtr, inputLen)
 
-  var outputLen = 32
-  var outputArrPtr = Module._malloc(outputLen)
-  var outputArr = new Uint8Array(Module.HEAPU8.buffer, outputArrPtr, outputLen)
+  const outputLen = 32
+  const outputArrPtr = Module._malloc(outputLen)
+  const outputArr = new Uint8Array(Module.HEAPU8.buffer, outputArrPtr, outputLen)
 
   inputArr.set(input)
 
@@ -284,26 +331,26 @@ function hmac_sha512(initKey, inputs) {
   validateArray(inputs)
   inputs.map(validateBuffer)
 
-  var ctxLen = Module._emscripten_size_of_hmac_sha512_ctx()
-  var ctxArrPtr = Module._malloc(ctxLen)
-  var ctxArr = new Uint8Array(Module.HEAPU8.buffer, ctxArrPtr, ctxLen)
+  const ctxLen = Module._emscripten_size_of_hmac_sha512_ctx()
+  const ctxArrPtr = Module._malloc(ctxLen)
+  const ctxArr = new Uint8Array(Module.HEAPU8.buffer, ctxArrPtr, ctxLen)
 
-  var initKeyLen = initKey.length
-  var initKeyArrPtr = Module._malloc(initKeyLen)
-  var initKeyArr = new Uint8Array(Module.HEAPU8.buffer, initKeyArrPtr, initKeyLen)
+  const initKeyLen = initKey.length
+  const initKeyArrPtr = Module._malloc(initKeyLen)
+  const initKeyArr = new Uint8Array(Module.HEAPU8.buffer, initKeyArrPtr, initKeyLen)
 
-  var outputLen = 64
-  var outputArrPtr = Module._malloc(outputLen)
-  var outputArr = new Uint8Array(Module.HEAPU8.buffer, outputArrPtr, outputLen)
+  const outputLen = 64
+  const outputArrPtr = Module._malloc(outputLen)
+  const outputArr = new Uint8Array(Module.HEAPU8.buffer, outputArrPtr, outputLen)
 
   initKeyArr.set(initKey)
 
   Module._emscripten_hmac_sha512_init(ctxArrPtr, initKeyArrPtr, initKeyLen)
 
-  for (var i = 0; i < inputs.length; i++) {
-    var inputLen = inputs[i].length
-    var inputArrPtr = Module._malloc(inputLen)
-    var inputArr = new Uint8Array(Module.HEAPU8.buffer, inputArrPtr, inputLen)
+  for (let i = 0; i < inputs.length; i++) {
+    const inputLen = inputs[i].length
+    const inputArrPtr = Module._malloc(inputLen)
+    const inputArr = new Uint8Array(Module.HEAPU8.buffer, inputArrPtr, inputLen)
 
     inputArr.set(inputs[i])
 
@@ -329,17 +376,17 @@ function cardanoMemoryCombine(input, password) {
     return input
   }
 
-  var transformedPassword = blake2b(Buffer.from(password, 'utf-8'), 32)
-  var transformedPasswordLen = transformedPassword.length
-  var transformedPasswordArrPtr = Module._malloc(transformedPasswordLen)
-  var transformedPasswordArr = new Uint8Array(Module.HEAPU8.buffer, transformedPasswordArrPtr, transformedPasswordLen)
+  const transformedPassword = blake2b(Buffer.from(password, 'utf-8'), 32)
+  const transformedPasswordLen = transformedPassword.length
+  const transformedPasswordArrPtr = Module._malloc(transformedPasswordLen)
+  const transformedPasswordArr = new Uint8Array(Module.HEAPU8.buffer, transformedPasswordArrPtr, transformedPasswordLen)
 
-  var inputLen = input.length
-  var inputArrPtr = Module._malloc(inputLen)
-  var inputArr = new Uint8Array(Module.HEAPU8.buffer, inputArrPtr, inputLen)
+  const inputLen = input.length
+  const inputArrPtr = Module._malloc(inputLen)
+  const inputArr = new Uint8Array(Module.HEAPU8.buffer, inputArrPtr, inputLen)
 
-  var outputArrPtr = Module._malloc(inputLen)
-  var outputArr = new Uint8Array(Module.HEAPU8.buffer, outputArrPtr, inputLen)
+  const outputArrPtr = Module._malloc(inputLen)
+  const outputArr = new Uint8Array(Module.HEAPU8.buffer, outputArrPtr, inputLen)
 
   inputArr.set(input)
   transformedPasswordArr.set(transformedPassword)
@@ -358,28 +405,28 @@ function chacha20poly1305Encrypt(input, key, nonce) {
   validateBuffer(key, 32)
   validateBuffer(nonce, 12)
 
-  var inputLen = input.length
-  var inputArrPtr = Module._malloc(inputLen)
-  var inputArr = new Uint8Array(Module.HEAPU8.buffer, inputArrPtr, inputLen)
+  const inputLen = input.length
+  const inputArrPtr = Module._malloc(inputLen)
+  const inputArr = new Uint8Array(Module.HEAPU8.buffer, inputArrPtr, inputLen)
 
-  var keyLen = key.length
-  var keyArrPtr = Module._malloc(keyLen)
-  var keyArr = new Uint8Array(Module.HEAPU8.buffer, keyArrPtr, keyLen)
+  const keyLen = key.length
+  const keyArrPtr = Module._malloc(keyLen)
+  const keyArr = new Uint8Array(Module.HEAPU8.buffer, keyArrPtr, keyLen)
 
-  var nonceLen = nonce.length
-  var nonceArrPtr = Module._malloc(nonceLen)
-  var nonceArr = new Uint8Array(Module.HEAPU8.buffer, nonceArrPtr, nonceLen)
+  const nonceLen = nonce.length
+  const nonceArrPtr = Module._malloc(nonceLen)
+  const nonceArr = new Uint8Array(Module.HEAPU8.buffer, nonceArrPtr, nonceLen)
 
-  var tagLen = 16
-  var outputLen = inputLen + tagLen
-  var outputArrPtr = Module._malloc(outputLen)
-  var outputArr = new Uint8Array(Module.HEAPU8.buffer, outputArrPtr, outputLen)
+  const tagLen = 16
+  const outputLen = inputLen + tagLen
+  const outputArrPtr = Module._malloc(outputLen)
+  const outputArr = new Uint8Array(Module.HEAPU8.buffer, outputArrPtr, outputLen)
 
   inputArr.set(input)
   keyArr.set(key)
   nonceArr.set(nonce)
 
-  var resultCode = Module._emscripten_chacha20poly1305_enc(keyArrPtr, nonceArrPtr, inputArrPtr, inputLen, outputArrPtr, outputArrPtr + inputLen, tagLen, 1)
+  const resultCode = Module._emscripten_chacha20poly1305_enc(keyArrPtr, nonceArrPtr, inputArrPtr, inputLen, outputArrPtr, outputArrPtr + inputLen, tagLen, 1)
 
   Module._free(inputArrPtr)
   Module._free(keyArrPtr)
@@ -399,35 +446,35 @@ function chacha20poly1305Decrypt(input, key, nonce) {
   validateBuffer(nonce, 12)
 
   // extract tag from input
-  var tagLen = 16
-  var tag = input.slice(input.length - tagLen, input.length)
-  var input = input.slice(0, input.length - tagLen)
+  const tagLen = 16
+  const tag = input.slice(input.length - tagLen, input.length)
+  input = input.slice(0, input.length - tagLen)
 
-  var inputLen = input.length
-  var inputArrPtr = Module._malloc(inputLen)
-  var inputArr = new Uint8Array(Module.HEAPU8.buffer, inputArrPtr, inputLen)
+  const inputLen = input.length
+  const inputArrPtr = Module._malloc(inputLen)
+  const inputArr = new Uint8Array(Module.HEAPU8.buffer, inputArrPtr, inputLen)
 
-  var tagArrPtr = Module._malloc(tagLen)
-  var tagArr = new Uint8Array(Module.HEAPU8.buffer, tagArrPtr, tagLen)
+  const tagArrPtr = Module._malloc(tagLen)
+  const tagArr = new Uint8Array(Module.HEAPU8.buffer, tagArrPtr, tagLen)
 
-  var keyLen = key.length
-  var keyArrPtr = Module._malloc(keyLen)
-  var keyArr = new Uint8Array(Module.HEAPU8.buffer, keyArrPtr, keyLen)
+  const keyLen = key.length
+  const keyArrPtr = Module._malloc(keyLen)
+  const keyArr = new Uint8Array(Module.HEAPU8.buffer, keyArrPtr, keyLen)
 
-  var nonceLen = nonce.length
-  var nonceArrPtr = Module._malloc(nonceLen)
-  var nonceArr = new Uint8Array(Module.HEAPU8.buffer, nonceArrPtr, nonceLen)
+  const nonceLen = nonce.length
+  const nonceArrPtr = Module._malloc(nonceLen)
+  const nonceArr = new Uint8Array(Module.HEAPU8.buffer, nonceArrPtr, nonceLen)
 
-  var outputLen = inputLen
-  var outputArrPtr = Module._malloc(outputLen)
-  var outputArr = new Uint8Array(Module.HEAPU8.buffer, outputArrPtr, outputLen)
+  const outputLen = inputLen
+  const outputArrPtr = Module._malloc(outputLen)
+  const outputArr = new Uint8Array(Module.HEAPU8.buffer, outputArrPtr, outputLen)
 
   inputArr.set(input)
   tagArr.set(tag)
   keyArr.set(key)
   nonceArr.set(nonce)
 
-  var resultCode = Module._emscripten_chacha20poly1305_enc(keyArrPtr, nonceArrPtr, inputArrPtr, inputLen, outputArrPtr, tagArrPtr, tagLen, 0)
+  const resultCode = Module._emscripten_chacha20poly1305_enc(keyArrPtr, nonceArrPtr, inputArrPtr, inputLen, outputArrPtr, tagArrPtr, tagLen, 0)
 
   Module._free(inputArrPtr)
   Module._free(keyArrPtr)
