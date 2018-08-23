@@ -4,7 +4,7 @@ const Module = require('./lib.js')
 const crc32 = require('./utils/crc32')
 const base58 = require('./utils/base58')
 const scrypt = require('./utils/scrypt-async')
-const pbkdf2Sync = require('pbkdf2').pbkdf2Sync
+const pbkdf2 = require('./utils/pbkdf2')
 
 const HARDENED_THRESHOLD = 0x80000000
 
@@ -146,7 +146,7 @@ function walletSecretFromSeed(seed, chainCode) {
   return new Buffer(walletSecretArr)
 }
 
-function walletSecretFromMnemonic(mnemonic, derivationScheme) {
+async function walletSecretFromMnemonic(mnemonic, derivationScheme) {
   validateDerivationScheme(derivationScheme)
 
   if (derivationScheme === 1) {
@@ -191,10 +191,10 @@ function walletSecretFromMnemonicV1(mnemonic) {
   return result
 }
 
-function walletSecretFromMnemonicV2(mnemonic, password) {
+async function walletSecretFromMnemonicV2(mnemonic, password) {
   validateMnemonic(mnemonic)
   const entropy = Buffer.from(bip39.mnemonicToEntropy(mnemonic), 'hex')
-  const xprv = pbkdf2Sync(password, entropy, 4096, 96, 'sha512')
+  const xprv = await pbkdf2(password, entropy, 4096, 96, 'sha512')
 
   xprv[0] &= 248
   xprv[31] &= 31

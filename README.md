@@ -12,7 +12,7 @@ compiled to pure javascript using Emscripten. This is a collection of cryptolibr
 var lib = require('cardano-crypto.js')
 
 var mnemonic = 'logic easily waste eager injury oval sentence wine bomb embrace gossip supreme'
-var walletSecret = lib.walletSecretFromMnemonic(mnemonic)
+var walletSecret = await lib.walletSecretFromMnemonic(mnemonic, 1)
 var msg = new Buffer('hello there')
 var sig = lib.sign(msg, walletSecret)
 ```
@@ -23,7 +23,7 @@ var sig = lib.sign(msg, walletSecret)
 var lib = require('cardano-crypto.js')
 
 var mnemonic = 'logic easily waste eager injury oval sentence wine bomb embrace gossip supreme'
-var parentWalletSecret = lib.walletSecretFromMnemonic(mnemonic)
+var parentWalletSecret = lib.walletSecretFromMnemonic(mnemonic, 1)
 var childWalletSecret = lib.derivePrivate(parentWalletSecret, 0x80000001, 1)
 ```
 
@@ -33,7 +33,7 @@ var childWalletSecret = lib.derivePrivate(parentWalletSecret, 0x80000001, 1)
 var lib = require('cardano-crypto.js')
 
 var mnemonic = 'logic easily waste eager injury oval sentence wine bomb embrace gossip supreme'
-var parentWalletSecret = lib.walletSecretFromMnemonic(mnemonic)
+var parentWalletSecret = lib.walletSecretFromMnemonic(mnemonic, 1)
 var parentWalletPublicKey = parentWalletSecret.slice(64, 128)
 var childWalletSecret = lib.derivePublic(parentWalletPublicKey, 1, 1)
 ```
@@ -42,9 +42,9 @@ var childWalletSecret = lib.derivePublic(parentWalletPublicKey, 1, 1)
 
 * `Buffer sign(Buffer msg, Buffer walletSecret)`
 * `Bool verify(Buffer msg, Buffer publicKey, Buffer sig)`
-* `Buffer walletSecretFromMnemonic(String mnemonic)`
-* `Buffer derivePrivate(Buffer parentKey, int index, int derivationMode)`
-* `Buffer derivePublic(Buffer parentExtPubKey, int index, int derivationMode)`
+* `async Buffer walletSecretFromMnemonic(String mnemonic, int derivationScheme)`
+* `Buffer derivePrivate(Buffer parentKey, int index, int derivationScheme)`
+* `Buffer derivePublic(Buffer parentExtPubKey, int index, int derivationScheme)`
 * `Buffer blake2b(Buffer input, outputLen)`
 * `Buffer sha3_256(Buffer input)`
 * `Buffer chacha20poly1305Encrypt(Buffer input, Buffer key, Buffer nonce)`

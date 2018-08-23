@@ -18,10 +18,10 @@ var sampleNonHardenedChildKeyMode1 = Buffer.from('30c87a45fe4a8f143478db0d8db6cf
 var sampleNonHardenedChildKeyMode2 = Buffer.from('19ad2602cee521db72c4ad41c2daf36ca46cf8e80733822fa0f79c8013de8e6fed4f3181d9f544612c5f15e01db0745111b8ee7fc87b784ee083ad314e094662', 'hex')
 var sampleScryptDerivedKey = '5012b74fca8ec8a4a0a62ffdeeee959d'
 
-test('wallet secret from mnemonic V1', function(t) {
+test('wallet secret from mnemonic V1', async function(t) {
   t.plan(1)
 
-  var walletSecret = lib.walletSecretFromMnemonic(sampleWalletMnemonicV1, 1)
+  var walletSecret = await lib.walletSecretFromMnemonic(sampleWalletMnemonicV1, 1)
   t.equals(
     walletSecret.toString('hex'),
     sampleWalletSecretV1.toString('hex'),
@@ -29,10 +29,10 @@ test('wallet secret from mnemonic V1', function(t) {
   )
 })
 
-test('wallet secret from mnemonic V2', function(t) {
+test('wallet secret from mnemonic V2', async function(t) {
   t.plan(1)
 
-  var walletSecret = lib.walletSecretFromMnemonic(sampleWalletMnemonicV2, 2)
+  var walletSecret = await lib.walletSecretFromMnemonic(sampleWalletMnemonicV2, 2)
   t.equals(
     walletSecret.toString('hex'),
     sampleWalletSecretV2.toString('hex'),
