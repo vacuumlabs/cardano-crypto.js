@@ -1,10 +1,12 @@
 var test = require('tape')
 var lib = require('..')
 
-var sampleWalletMnemonic = 'logic easily waste eager injury oval sentence wine bomb embrace gossip supreme'
-var sampleWalletSecret = Buffer.from('d809b1b4b4c74734037f76aace501730a3fe2fca30b5102df99ad3f7c0103e48d54cde47e9041b31f3e6873d700d83f7a937bea746dadfa2c5b0a6a92502356ce6f04522f875c1563682ca876ddb04c2e2e3ae718e3ff9f11c03dd9f9dccf69869272d81c376382b8a87c21370a7ae9618df8da708d1a9490939ec54ebe43000', 'hex')
-var samplePublicKey = sampleWalletSecret.slice(64, 96)
-var sampleExtendedPublicKey = sampleWalletSecret.slice(64, 128)
+var sampleWalletMnemonicV1 = 'logic easily waste eager injury oval sentence wine bomb embrace gossip supreme'
+var sampleWalletMnemonicV2 = 'cost dash dress stove morning robust group affair stomach vacant route volume yellow salute laugh'
+var sampleWalletSecretV1 = Buffer.from('d809b1b4b4c74734037f76aace501730a3fe2fca30b5102df99ad3f7c0103e48d54cde47e9041b31f3e6873d700d83f7a937bea746dadfa2c5b0a6a92502356ce6f04522f875c1563682ca876ddb04c2e2e3ae718e3ff9f11c03dd9f9dccf69869272d81c376382b8a87c21370a7ae9618df8da708d1a9490939ec54ebe43000', 'hex')
+var sampleWalletSecretV2 = Buffer.from('70b441728448ebbafe087474d2ddc59be673700c70c3843660f681c34a0b57442a982a7c6edb0024d5b7a520d3369c236f6e0e649b78aebbe40a7b16618b9b2b783f05bc024661edbd9aa29651ea19d48ca974e70704f3d44ff7f48c37c5aa65f25b034e06cacc37ce661cdc718a4a35a221649d55d5e5691c16f6bec6ee7b85', 'hex')
+var samplePublicKey = sampleWalletSecretV1.slice(64, 96)
+var sampleExtendedPublicKey = sampleWalletSecretV1.slice(64, 128)
 var sampleMessage = Buffer.from('Hello world', 'utf-8')
 var sampleRightSignature = Buffer.from('1096ddcfb2ad21a4c0d861ef3fabe18841e8de88105b0d8e36430d7992c588634ead4100c32b2800b31b65e014d54a8238bdda63118d829bf0bcf1b631e86f0e', 'hex')
 var sampleWrongSignature = Buffer.from('2096ddcfb2ad21a4c0d861ef3fabe18841e8de88105b0d8e36430d7992c588634ead4100c33b2800b31b65e014d54a8238bdda63118d829bf0bcf1b631e86f0e', 'hex')
@@ -16,13 +18,24 @@ var sampleNonHardenedChildKeyMode1 = Buffer.from('30c87a45fe4a8f143478db0d8db6cf
 var sampleNonHardenedChildKeyMode2 = Buffer.from('19ad2602cee521db72c4ad41c2daf36ca46cf8e80733822fa0f79c8013de8e6fed4f3181d9f544612c5f15e01db0745111b8ee7fc87b784ee083ad314e094662', 'hex')
 var sampleScryptDerivedKey = '5012b74fca8ec8a4a0a62ffdeeee959d'
 
-test('wallet secret from mnemonic', function(t) {
+test('wallet secret from mnemonic V1', function(t) {
   t.plan(1)
 
-  var walletSecret = lib.walletSecretFromMnemonic(sampleWalletMnemonic)
+  var walletSecret = lib.walletSecretFromMnemonic(sampleWalletMnemonicV1, 1)
   t.equals(
     walletSecret.toString('hex'),
-    sampleWalletSecret.toString('hex'),
+    sampleWalletSecretV1.toString('hex'),
+    'wallet secret derivates from mnemonic properly'
+  )
+})
+
+test('wallet secret from mnemonic V2', function(t) {
+  t.plan(1)
+
+  var walletSecret = lib.walletSecretFromMnemonic(sampleWalletMnemonicV2, 2)
+  t.equals(
+    walletSecret.toString('hex'),
+    sampleWalletSecretV2.toString('hex'),
     'wallet secret derivates from mnemonic properly'
   )
 })
@@ -30,7 +43,7 @@ test('wallet secret from mnemonic', function(t) {
 test('signing', function(t) {
   t.plan(1)
 
-  var signature = lib.sign(sampleMessage, sampleWalletSecret)
+  var signature = lib.sign(sampleMessage, sampleWalletSecretV1)
 
   t.equals(
     signature.toString('hex'),
@@ -59,13 +72,13 @@ test('key hardened derivation', function(t){
   t.plan(2)
 
   t.equals(
-    lib.derivePrivate(sampleWalletSecret, sampleHardenedIndex, 1).toString('hex'),
+    lib.derivePrivate(sampleWalletSecretV1, sampleHardenedIndex, 1).toString('hex'),
     sampleHardenedChildKeyMode1.toString('hex'),
     'should properly derive hardened child key in derivation mode 1'
   )
 
   t.equals(
-    lib.derivePrivate(sampleWalletSecret, sampleHardenedIndex, 2).toString('hex'),
+    lib.derivePrivate(sampleWalletSecretV1, sampleHardenedIndex, 2).toString('hex'),
     sampleHardenedChildKeyMode2.toString('hex'),
     'should properly derive hardened child key in derivation mode 2'
   )

@@ -20,6 +20,11 @@ int emscripten_verify(const unsigned char *message, size_t message_len, const un
 }
 
 EMSCRIPTEN_KEEPALIVE
+void emscripten_to_public(const unsigned char *secret_key, unsigned char *public_key) {
+  cardano_crypto_ed25519_publickey(secret_key, public_key);
+}
+
+EMSCRIPTEN_KEEPALIVE
 int emscripten_wallet_secret_from_seed(const unsigned char *seed, const unsigned char *chain_code, unsigned char *wallet_secret){
   return wallet_encrypted_from_secret(NULL, 0, seed, chain_code, (encrypted_key*) wallet_secret);
 }
