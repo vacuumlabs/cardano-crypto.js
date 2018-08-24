@@ -17,7 +17,7 @@ var msg = new Buffer('hello there')
 var sig = lib.sign(msg, walletSecret)
 ```
 
-## deriving child keys (hardened derivation, you can choose either derivation mode 1 or 2)
+## deriving child keys (hardened derivation, you can choose either derivation scheme 1 or 2)
 
 ``` javascript
 var lib = require('cardano-crypto.js')
@@ -27,7 +27,7 @@ var parentWalletSecret = lib.walletSecretFromMnemonic(mnemonic, 1)
 var childWalletSecret = lib.derivePrivate(parentWalletSecret, 0x80000001, 1)
 ```
 
-## deriving child public keys (nonhardened derivation, you can choose either derivation mode 1 or 2)
+## deriving child public keys (nonhardened derivation, you can choose either derivation scheme 1 or 2)
 
 ``` javascript
 var lib = require('cardano-crypto.js')
