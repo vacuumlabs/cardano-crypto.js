@@ -3,7 +3,7 @@
 * [haskell-crypto/cryptonite](https://github.com/haskell-crypto/cryptonite)
 * [grigorig/chachapoly](https://github.com/grigorig/chachapoly)
 
-compiled to pure javascript using Emscripten. This is a collection of cryptolibraries useful for doing Cardano cryptography, eliminating the need for many dependencies.
+compiled to pure javascript using Emscripten. This is a collection of cryptolibraries and functions useful for working with Cardano cryptocurrency, eliminating the need for many dependencies.
 
 # examples
 ## signing
@@ -45,11 +45,14 @@ var childWalletSecret = lib.derivePublic(parentWalletPublicKey, 1, 1)
 * `async Buffer walletSecretFromMnemonic(String mnemonic, int derivationScheme)`
 * `Buffer derivePrivate(Buffer parentKey, int index, int derivationScheme)`
 * `Buffer derivePublic(Buffer parentExtPubKey, int index, int derivationScheme)`
+* `Buffer decodePaperWalletMnemonic(string paperWalletMnemonic)`
+* `Buffer xpubToHdPassphrase(Buffer xpub)`
+* `string packAddress(Array[int] derivationPath, Buffer xpub, Buffer hdPassphrase, int derivationScheme)`
+* `string unpackAddress(string address, Buffer hdPassphrase)`
 * `Buffer blake2b(Buffer input, outputLen)`
-* `Buffer sha3_256(Buffer input)`
-* `Buffer chacha20poly1305Encrypt(Buffer input, Buffer key, Buffer nonce)`
-* `Buffer chacha20poly1305Decrypt(Buffer input, Buffer key, Buffer nonce)`
 * `Buffer cardanoMemoryCombine(Buffer input, String password)`
+* `[base58](https://www.npmjs.com/package/base58)`
+* `[scrypt](https://www.npmjs.com/package/scrypt-async)`
 
 We encourage you to take a look `at test/index.js` to see how the functions above should be used.
 

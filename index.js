@@ -1,10 +1,12 @@
 const bip39 = require('bip39-light')
+const cbor = require('cbor')
 
 const Module = require('./lib.js')
 const crc32 = require('./utils/crc32')
 const base58 = require('./utils/base58')
 const scrypt = require('./utils/scrypt-async')
 const pbkdf2 = require('./utils/pbkdf2')
+const CborIndefiniteLengthArray = require('./utils/CborIndefiniteLengthArray')
 
 const HARDENED_THRESHOLD = 0x80000000
 
@@ -47,6 +49,31 @@ function validateMnemonic(input) {
     const e = new Error('Invalid or unsupported mnemonic format:')
     e.name = 'InvalidArgumentException'
     throw e
+  }
+}
+
+function validateMnemonicWords(input) {
+  const wordlist = bip39.wordlists.EN
+  const words = input.split(' ')
+
+  const valid = words.reduce((result, word) => {
+    return result && wordlist.indexOf(word) !== -1
+  }, true)
+
+  if (!valid) {
+    throw new Error('Invalid mnemonic words')
+  }
+}
+
+function validatePaperWalletMnemonic(input) {
+  validateMnemonicWords(input)
+
+  const mnemonicLength = input.split(' ').length
+
+  if (mnemonicLength !== 27) {
+    throw Error(
+      `Paper Wallet Mnemonic must be 27 words, got ${mnemonicLength} instead`
+    )
   }
 }
 
@@ -489,18 +516,156 @@ function chacha20poly1305Decrypt(input, key, nonce) {
   return Buffer.from(outputArr)
 }
 
+async function decodePaperWalletMnemonic(paperWalletMnemonic) {
+  validatePaperWalletMnemonic(paperWalletMnemonic)
+
+  const paperWalletMnemonicAsList = paperWalletMnemonic.split(' ')
+
+  const mnemonicScrambledPart = paperWalletMnemonicAsList.slice(0, 18).join(' ')
+  const mnemonicPassphrasePart = paperWalletMnemonicAsList.slice(18, 27).join(' ')
+
+  const passphrase = await mnemonicToPaperWalletPassphrase(mnemonicPassphrasePart)
+  const unscrambledMnemonic = await paperWalletUnscrambleStrings(passphrase, mnemonicScrambledPart)
+
+  return unscrambledMnemonic
+}
+
+async function mnemonicToPaperWalletPassphrase(mnemonic, password) {
+  const mnemonicBuffer = Buffer.from(mnemonic, 'utf8')
+  const salt = `mnemonic${password || ''}`
+  const saltBuffer = Buffer.from(salt, 'utf8')
+  return (await pbkdf2(mnemonicBuffer, saltBuffer, 2048, 32, 'sha512')).toString('hex')
+}
+
+/* taken from https://github.com/input-output-hk/rust-cardano/blob/08796d9f100f417ff30549b297bd20b249f87809/cardano/src/paperwallet.rs */
+async function paperWalletUnscrambleStrings(passphrase, mnemonic) {
+  const input = Buffer.from(bip39.mnemonicToEntropy(mnemonic), 'hex')
+  const saltLength = 8
+
+  if (saltLength >= input.length) {
+    throw Error('unscrambleStrings: Input is too short')
+  }
+
+  const outputLength = input.length - saltLength
+
+  const output = await pbkdf2(passphrase, input.slice(0, saltLength), 10000, outputLength, 'sha512')
+
+  for (let i = 0; i < outputLength; i++) {
+    output[i] = output[i] ^ input[saltLength + i]
+  }
+
+  return bip39.entropyToMnemonic(output)
+}
+
+async function xpubToHdPassphrase(xpub) {
+  validateBuffer(xpub, 64)
+
+  return pbkdf2(xpub, 'address-hashing', 500, 32, 'sha512')  
+}
+
+function packAddress(derivationPath, xpub, hdPassphrase, derivationScheme) {
+  validateBuffer(xpub, 64)
+  validateDerivationScheme(derivationScheme)
+
+  if (derivationScheme === 1) {
+    validateArray(derivationPath)
+    validateBuffer(hdPassphrase, 32)
+  }
+
+  let addressPayload, addressAttributes
+  if (derivationPath.length > 0 && derivationScheme === 1) {
+    addressPayload = encryptDerivationPath(derivationPath, hdPassphrase)
+    addressAttributes = new Map([[1, cbor.encode(addressPayload)]])
+  } else {
+    addressPayload = Buffer.from([])
+    addressAttributes = new Map()
+  }
+
+  const addressRoot = getAddressHash([
+    0,
+    [0, xpub],
+    addressPayload.length > 0 ? new Map([[1, cbor.encode(addressPayload)]]) : new Map(),
+  ])
+  const addressType = 0 // Public key address
+  const addressData = [addressRoot, addressAttributes, addressType]
+  const addressDataEncoded = cbor.encode(addressData)
+
+  return base58.encode(
+    cbor.encode([new cbor.Tagged(24, addressDataEncoded), crc32(addressDataEncoded)])
+  )
+}
+
+function unpackAddress(address, hdPassphrase) {
+  // we decode the address from the base58 string
+  // and then we strip the 24 CBOR data tags (the "[0].value" part)
+  const addressAsBuffer = cbor.decode(base58.decode(address))[0].value
+  const addressData = cbor.decode(addressAsBuffer)
+  const attributes = addressData[1]
+  const payload = cbor.decode(attributes.get(1))
+  let derivationPath
+
+  try {
+    derivationPath = decryptDerivationPath(payload, hdPassphrase)
+  } catch (e) {
+    throw new Error('Unable to get derivation path from address')
+  }
+
+  if (derivationPath && derivationPath.length > 2) {
+    throw Error('Invalid derivation path length, should be at most 2')
+  }
+
+  return {
+    derivationPath,
+  }
+}
+
+function getAddressHash(input) {
+  // eslint-disable-next-line camelcase
+  const firstHash = sha3_256(cbor.encode(input))
+  return blake2b(firstHash, 28)
+}
+
+function encryptDerivationPath(derivationPath, hdPassphrase) {
+  const serializedDerivationPath = cbor.encode(new CborIndefiniteLengthArray(derivationPath))
+
+  return chacha20poly1305Encrypt(
+    serializedDerivationPath,
+    hdPassphrase,
+    Buffer.from('serokellfore')
+  )
+}
+
+function decryptDerivationPath(addressPayload, hdPassphrase) {
+  const decipheredDerivationPath = chacha20poly1305Decrypt(
+    addressPayload,
+    hdPassphrase,
+    Buffer.from('serokellfore')
+  )
+
+  try {
+    return cbor.decode(Buffer.from(decipheredDerivationPath))
+  } catch (err) {
+    debugLog(err)
+    throw NamedError('AddressDecodingException', 'incorrect address or passphrase')
+  }
+}
+
+
 module.exports = {
   derivePublic,
   derivePrivate,
   sign,
   verify,
-  sha3_256,
-  chacha20poly1305Encrypt,
-  chacha20poly1305Decrypt,
-  blake2b,
   walletSecretFromMnemonic,
+  decodePaperWalletMnemonic,
+  xpubToHdPassphrase,
+  packAddress,
+  unpackAddress,
   cardanoMemoryCombine,
+  blake2b,
   base58,
-  crc32,
   scrypt,
+  _sha3_256: sha3_256,
+  _chacha20poly1305Decrypt: chacha20poly1305Decrypt,
+  _chacha20poly1305Encrypt: chacha20poly1305Encrypt,
 }

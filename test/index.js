@@ -17,6 +17,9 @@ var sampleNonhardenedIndex = 1
 var sampleNonHardenedChildKeyMode1 = Buffer.from('30c87a45fe4a8f143478db0d8db6cf963bdfb559f2a050fceae40bc7e97333f832635e6d3dd3409b00373d4f9b49eb8e9444a4ea8e380397e9711a95b940ecd7', 'hex')
 var sampleNonHardenedChildKeyMode2 = Buffer.from('19ad2602cee521db72c4ad41c2daf36ca46cf8e80733822fa0f79c8013de8e6fed4f3181d9f544612c5f15e01db0745111b8ee7fc87b784ee083ad314e094662', 'hex')
 var sampleScryptDerivedKey = '5012b74fca8ec8a4a0a62ffdeeee959d'
+var samplePaperWalletMnemonic =
+  'force usage medal chapter start myself odor ripple concert aspect wink melt afford lounge smart bulk way hazard burden type broken defense city announce reward same tumble'
+var sampleDecodedPaperWalletMnemonic = 'swim average antenna there trap nice good stereo lion safe next brief'
 
 test('wallet secret from mnemonic V1', async function(t) {
   t.plan(1)
@@ -131,7 +134,7 @@ test('sha3_256', function(t){
   var message = Buffer.from('83008200584078732eb9d33e03b3daab4a4613bc19b8820ef5911caf43785780ec6493653bf67115f7f2c460be13dcc09f06f3d63fffe05a3d12996e5224e189a41ee2ef5c95a101581e581c140539c64edded60a7f2d869373e87e744591935bfcdadaa8517974c', 'hex')
 
   t.equals(
-    lib.sha3_256(message).toString('hex'),
+    lib._sha3_256(message).toString('hex'),
     '98b05e27eab982f4d108694a5ab636d68cc898e4af98980516fe2560b13e53a9',
     'should properly compute sha3_256 hash'
   )
@@ -145,13 +148,13 @@ test('chacha20poly1305', function(t) {
   var expectedEncryptionResult = Buffer.from('140539c64edded60a7f2d9696b17a78b4494b6bf0eef0cc28cad3c2b', 'hex')
 
   t.equals(
-    lib.chacha20poly1305Encrypt(message, key, nonce, true).toString('hex'),
+    lib._chacha20poly1305Encrypt(message, key, nonce, true).toString('hex'),
     expectedEncryptionResult.toString('hex'),
     'should properly encrypt with chacha20poly1305'
   )
 
   t.equals(
-    lib.chacha20poly1305Decrypt(expectedEncryptionResult, key, nonce, false).toString('hex'),
+    lib._chacha20poly1305Decrypt(expectedEncryptionResult, key, nonce, false).toString('hex'),
     message.toString('hex'),
     'should properly decrypt with chacha20poly1305'
   )
@@ -194,5 +197,14 @@ test('scrypt', function (t) {
     key,
     sampleScryptDerivedKey,
     'should properly derive key by scrypt'
+  )
+})
+
+test('paper wallet mnemonic decoding', async function (t) {
+  t.plan(1)
+  t.equals(
+    await lib.decodePaperWalletMnemonic(samplePaperWalletMnemonic),
+    sampleDecodedPaperWalletMnemonic,
+    'should properly decode paper wallet mnemonic'
   )
 })
