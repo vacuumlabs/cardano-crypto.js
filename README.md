@@ -58,7 +58,7 @@ We encourage you to take a look `at test/index.js` to see how the functions abov
 
 # development
 
-* Install [emscripten](https://askubuntu.com/questions/891630/how-to-install-the-latest-emscripten-on-ubuntu-using-command-line)
+* Install [emscripten](http://kripken.github.io/emscripten-site/docs/getting_started/downloads.html#installation-instructions), recommended version is 1.38.8
 * run `npm install`
 * run `npm run build`
 
