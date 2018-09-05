@@ -49,6 +49,7 @@ var childWalletSecret = lib.derivePublic(parentWalletPublicKey, 1, 1)
 * `Buffer xpubToHdPassphrase(Buffer xpub)`
 * `string packAddress(Array[int] derivationPath, Buffer xpub, Buffer hdPassphrase, int derivationScheme)`
 * `string unpackAddress(string address, Buffer hdPassphrase)`
+* `Bool isValidAddress(string address)`
 * `Buffer blake2b(Buffer input, outputLen)`
 * `Buffer cardanoMemoryCombine(Buffer input, String password)`
 * `[base58](https://www.npmjs.com/package/base58)`
