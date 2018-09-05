@@ -619,6 +619,25 @@ function unpackAddress(address, hdPassphrase) {
   }
 }
 
+function isValidAddress(address) {
+  try {
+    // we decode the address from the base58 string
+    const addressAsArray = cbor.decode(base58.decode(address))
+    // we strip the 24 CBOR data taga by taking the "value" attribute from the "Tagged" object
+    const addressDataEncoded = addressAsArray[0].value
+    const crc32Checksum = addressAsArray[1]
+    
+    if (crc32Checksum !== crc32(addressDataEncoded)) {
+      return false
+    }
+    
+  } catch (e) {
+    return false
+  }
+  return true
+}
+
+
 function getAddressHash(input) {
   // eslint-disable-next-line camelcase
   const firstHash = sha3_256(cbor.encode(input))
@@ -661,6 +680,7 @@ module.exports = {
   xpubToHdPassphrase,
   packAddress,
   unpackAddress,
+  isValidAddress,
   cardanoMemoryCombine,
   blake2b,
   base58,

@@ -20,6 +20,11 @@ var sampleScryptDerivedKey = '5012b74fca8ec8a4a0a62ffdeeee959d'
 var samplePaperWalletMnemonic =
   'force usage medal chapter start myself odor ripple concert aspect wink melt afford lounge smart bulk way hazard burden type broken defense city announce reward same tumble'
 var sampleDecodedPaperWalletMnemonic = 'swim average antenna there trap nice good stereo lion safe next brief'
+var sampleV1Address = 'DdzFFzCqrhssmYoG5Eca1bKZFdGS8d6iag1mU4wbLeYcSPVvBNF2wRG8yhjzQqErbg63N6KJA4DHqha113tjKDpGEwS5x1dT2KfLSbSJ'
+var sampleV2Address = 'Ae2tdPwUPEZ18ZjTLnLVr9CEvUEUX4eW1LBHbxxxJgxdAYHrDeSCSbCxrvx'
+var sampleAddressInvalidChecksum = 'Ae2tdPwUPEZ18ZjTLnLVr9CEvUEUX4eW1LBHbxxxJgxdAYHrDeSCSbCxrvm'
+var sampleRandomString = 'hasoiusaodiuhsaijnnsajnsaiussai'
+
 
 test('wallet secret from mnemonic V1', async function(t) {
   t.plan(1)
@@ -206,5 +211,30 @@ test('paper wallet mnemonic decoding', async function (t) {
     await lib.decodePaperWalletMnemonic(samplePaperWalletMnemonic),
     sampleDecodedPaperWalletMnemonic,
     'should properly decode paper wallet mnemonic'
+  )
+})
+
+test('address validation', async function (t) {
+  t.plan(4)
+  t.equals(
+    lib.isValidAddress(sampleV1Address),
+    true,
+    'should accept V1 address'
+  )
+  t.equals(
+    lib.isValidAddress(sampleV2Address),
+    true,
+    'should accept V2 address'
+  )
+  t.equals(
+    lib.isValidAddress(sampleAddressInvalidChecksum),
+    false,
+    'should reject address with invalid checksum'
+  )
+
+  t.equals(
+    lib.isValidAddress(sampleRandomString),
+    false,
+    'should reject random string'
   )
 })
