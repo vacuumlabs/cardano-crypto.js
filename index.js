@@ -1,5 +1,5 @@
 const bip39 = require('bip39-light')
-const cbor = require('cbor')
+const cbor = require('borc')
 
 const Module = require('./lib.js')
 const crc32 = require('./utils/crc32')
