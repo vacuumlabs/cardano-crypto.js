@@ -664,8 +664,7 @@ function decryptDerivationPath(addressPayload, hdPassphrase) {
   try {
     return cbor.decode(Buffer.from(decipheredDerivationPath))
   } catch (err) {
-    debugLog(err)
-    throw NamedError('AddressDecodingException', 'incorrect address or passphrase')
+    throw new Error('incorrect address or passphrase')
   }
 }
 
