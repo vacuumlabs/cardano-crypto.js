@@ -114,7 +114,7 @@ function sign(msg, walletSecret) {
   Module._free(walletSecretArrPtr)
   Module._free(sigPtr)
 
-  return new Buffer(sigArr)
+  return Buffer.from(sigArr)
 }
 
 function verify(msg, publicKey, sig) {
@@ -143,7 +143,59 @@ function verify(msg, publicKey, sig) {
   return result
 }
 
-function walletSecretFromSeed(seed, chainCode) {
+async function walletSecretFromMnemonic(mnemonic, derivationScheme) {
+  validateDerivationScheme(derivationScheme)
+
+  if (derivationScheme === 1) {
+    return walletSecretFromMnemonicV1(mnemonic)
+  } else if (derivationScheme === 2) {
+    return walletSecretFromMnemonicV2(mnemonic, '')
+  } else {
+    throw Error(`Derivation scheme ${derivationScheme} not implemented`)
+  }
+}
+
+function walletSecretFromMnemonicV1(mnemonic) {
+  const seed = mnemonicToSeedV1(mnemonic)
+  return seedToKeypairV1(seed)
+}
+
+function mnemonicToSeedV1(mnemonic) {
+  validateMnemonic(mnemonic)
+  const entropy = Buffer.from(bip39.mnemonicToEntropy(mnemonic), 'hex')
+  
+  return cborEncodeBuffer(blake2b(cborEncodeBuffer(entropy), 32))
+}
+
+function seedToKeypairV1(seed) {
+  let result
+  for (let i = 1; result === undefined && i <= 1000; i++) {
+    try {
+      const digest = hmac_sha512(seed, [Buffer.from(`Root Seed Chain ${i}`, 'ascii')])
+      const tempSeed = digest.slice(0, 32)
+      const chainCode = digest.slice(32, 64)
+
+      result = walletSecretFromSeedV1(tempSeed, chainCode)
+
+    } catch (e) {
+      if (e.name === 'InvalidSecret') {
+        continue
+      }
+
+      throw e
+    }
+  }
+
+  if (result === undefined) {
+    const e = new Error('Secret key generation from mnemonic is looping forever')
+    e.name = 'RuntimeException'
+    throw e
+  }
+
+  return result
+}
+
+function walletSecretFromSeedV1(seed, chainCode) {
   validateBuffer(seed, 32)
   validateBuffer(chainCode, 32)
 
@@ -170,66 +222,12 @@ function walletSecretFromSeed(seed, chainCode) {
     throw e
   }
 
-  return new Buffer(walletSecretArr)
-}
-
-async function walletSecretFromMnemonic(mnemonic, derivationScheme) {
-  validateDerivationScheme(derivationScheme)
-
-  if (derivationScheme === 1) {
-    return walletSecretFromMnemonicV1(mnemonic)
-  } else if (derivationScheme === 2) {
-    return walletSecretFromMnemonicV2(mnemonic, '')
-  } else {
-    throw Error(`Derivation scheme ${derivationScheme} not implemented`)
-  }
-}
-
-function walletSecretFromMnemonicV1(mnemonic) {
-  validateMnemonic(mnemonic)
-
-  const entropy = Buffer.from(bip39.mnemonicToEntropy(mnemonic), 'hex')
-  const hashSeed = cborEncodeBuffer(blake2b(cborEncodeBuffer(entropy), 32))
-
-  let result
-  for (let i = 1; result === undefined && i <= 1000; i++) {
-    try {
-      const digest = hmac_sha512(hashSeed, [Buffer.from(`Root Seed Chain ${i}`, 'ascii')])
-      const seed = digest.slice(0, 32)
-      const chainCode = digest.slice(32, 64)
-
-      result = walletSecretFromSeed(seed, chainCode)
-
-    } catch (e) {
-      if (e.name === 'InvalidSecret') {
-        continue
-      }
-
-      throw e
-    }
-  }
-
-  if (result === undefined) {
-    const e = new Error('Secret key generation from mnemonic is looping forever')
-    e.name = 'RuntimeException'
-    throw e
-  }
-
-  return result
+  return Buffer.from(walletSecretArr)
 }
 
 async function walletSecretFromMnemonicV2(mnemonic, password) {
-  validateMnemonic(mnemonic)
-  const entropy = Buffer.from(bip39.mnemonicToEntropy(mnemonic), 'hex')
-  const xprv = await pbkdf2(password, entropy, 4096, 96, 'sha512')
-
-  xprv[0] &= 248
-  xprv[31] &= 31
-  xprv[31] |= 64
-
-  const publicKey = toPublic(xprv.slice(0, 64))
-
-  const rootSecret = Buffer.concat([xprv.slice(0, 64), publicKey, xprv.slice(64,)])
+  const seed = mnemonicToSeedV2(mnemonic)
+  const rootSecret = await seedToKeypairV2(seed, password)
 
   return derivePrivate(
     derivePrivate(
@@ -240,6 +238,23 @@ async function walletSecretFromMnemonicV2(mnemonic, password) {
     HARDENED_THRESHOLD + 1815,
     2
   )
+}
+
+function mnemonicToSeedV2(mnemonic) {
+  validateMnemonic(mnemonic)
+  return Buffer.from(bip39.mnemonicToEntropy(mnemonic), 'hex')
+}
+
+async function seedToKeypairV2(seed, password) {
+  const xprv = await pbkdf2(password, seed, 4096, 96, 'sha512')
+
+  xprv[0] &= 248
+  xprv[31] &= 31
+  xprv[31] |= 64
+
+  const publicKey = toPublic(xprv.slice(0, 64))
+
+  return Buffer.concat([xprv.slice(0, 64), publicKey, xprv.slice(64,)])
 }
 
 function toPublic(privateKey) {
@@ -257,7 +272,7 @@ function toPublic(privateKey) {
   Module._free(privateKeyArrPtr)
   Module._free(publicKeyArrPtr)
 
-  return new Buffer(publicKeyArr)
+  return Buffer.from(publicKeyArr)
 }
 
 function derivePrivate(parentKey, index, derivationScheme) {
@@ -276,7 +291,7 @@ function derivePrivate(parentKey, index, derivationScheme) {
   Module._free(parentKeyArrPtr)
   Module._free(childKeyArrPtr)
 
-  return new Buffer(childKeyArr)
+  return Buffer.from(childKeyArr)
 }
 
 function derivePublic(parentExtPubKey, index, derivationScheme) {
@@ -311,7 +326,7 @@ function derivePublic(parentExtPubKey, index, derivationScheme) {
     throw Error(`derivePublic has exited with code ${resultCode}`)
   }
 
-  return Buffer.concat([new Buffer(childPubKeyArr), new Buffer(childChainCodeArr)])
+  return Buffer.concat([Buffer.from(childPubKeyArr), Buffer.from(childChainCodeArr)])
 }
 
 function blake2b(input, outputLen) {
@@ -684,6 +699,10 @@ module.exports = {
   blake2b,
   base58,
   scrypt,
+  _mnemonicToSeedV1: mnemonicToSeedV1,
+  _seedToKeypairV1: seedToKeypairV1,
+  _mnemonicToSeedV2: mnemonicToSeedV2,
+  _seedToKeypairV2: seedToKeypairV2,
   _sha3_256: sha3_256,
   _chacha20poly1305Decrypt: chacha20poly1305Decrypt,
   _chacha20poly1305Encrypt: chacha20poly1305Encrypt,
