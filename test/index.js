@@ -3,10 +3,10 @@ const lib = require('..')
 
 const sampleWalletMnemonicV1 = 'logic easily waste eager injury oval sentence wine bomb embrace gossip supreme'
 const sampleWalletMnemonicV2 = 'cost dash dress stove morning robust group affair stomach vacant route volume yellow salute laugh'
-const sampleWalletSecretV1 = Buffer.from('d809b1b4b4c74734037f76aace501730a3fe2fca30b5102df99ad3f7c0103e48d54cde47e9041b31f3e6873d700d83f7a937bea746dadfa2c5b0a6a92502356ce6f04522f875c1563682ca876ddb04c2e2e3ae718e3ff9f11c03dd9f9dccf69869272d81c376382b8a87c21370a7ae9618df8da708d1a9490939ec54ebe43000', 'hex')
-const sampleWalletSecretV2 = Buffer.from('70b441728448ebbafe087474d2ddc59be673700c70c3843660f681c34a0b57442a982a7c6edb0024d5b7a520d3369c236f6e0e649b78aebbe40a7b16618b9b2b783f05bc024661edbd9aa29651ea19d48ca974e70704f3d44ff7f48c37c5aa65f25b034e06cacc37ce661cdc718a4a35a221649d55d5e5691c16f6bec6ee7b85', 'hex')
-const samplePublicKey = sampleWalletSecretV1.slice(64, 96)
-const sampleExtendedPublicKey = sampleWalletSecretV1.slice(64, 128)
+const sampleRootKeypairV1 = Buffer.from('d809b1b4b4c74734037f76aace501730a3fe2fca30b5102df99ad3f7c0103e48d54cde47e9041b31f3e6873d700d83f7a937bea746dadfa2c5b0a6a92502356ce6f04522f875c1563682ca876ddb04c2e2e3ae718e3ff9f11c03dd9f9dccf69869272d81c376382b8a87c21370a7ae9618df8da708d1a9490939ec54ebe43000', 'hex')
+const sampleRootKeypairV2 = Buffer.from('a018cd746e128a0be0782b228c275473205445c33b9000a33dd5668b430b574426877cfe435fddda02409b839b7386f3738f10a30b95a225f4b720ee71d2505b5569bc9fa461f67b9355b3da8bd4298c5099fd4e001415117a59b424f85ce48cca8cc35f3c2be27b0b26562448a3a4b6bfd1a3828918b87ae76ce17ae96a8306', 'hex')
+const samplePublicKey = sampleRootKeypairV1.slice(64, 96)
+const sampleExtendedPublicKey = sampleRootKeypairV1.slice(64, 128)
 const sampleHdPassphrase = Buffer.from('c582f8e7cf7aeb6e5f3e96e939a92ae1642360a51d45150f34e70132a152203f', 'hex')
 const sampleMessage = Buffer.from('Hello world', 'utf-8')
 const sampleRightSignature = Buffer.from('1096ddcfb2ad21a4c0d861ef3fabe18841e8de88105b0d8e36430d7992c588634ead4100c32b2800b31b65e014d54a8238bdda63118d829bf0bcf1b631e86f0e', 'hex')
@@ -30,10 +30,10 @@ const sampleRandomString = 'hasoiusaodiuhsaijnnsajnsaiussai'
 test('wallet secret from mnemonic V1', async (t) => {
   t.plan(1)
 
-  const walletSecret = await lib.walletSecretFromMnemonic(sampleWalletMnemonicV1, 1)
+  const rootKeypair = await lib.mnemonicToRootKeypair(sampleWalletMnemonicV1, 1)
   t.equals(
-    walletSecret.toString('hex'),
-    sampleWalletSecretV1.toString('hex'),
+    rootKeypair.toString('hex'),
+    sampleRootKeypairV1.toString('hex'),
     'wallet secret derivates from mnemonic properly'
   )
 })
@@ -41,10 +41,10 @@ test('wallet secret from mnemonic V1', async (t) => {
 test('wallet secret from mnemonic V2', async (t) => {
   t.plan(1)
 
-  const walletSecret = await lib.walletSecretFromMnemonic(sampleWalletMnemonicV2, 2)
+  const rootKeypair = await lib.mnemonicToRootKeypair(sampleWalletMnemonicV2, 2)
   t.equals(
-    walletSecret.toString('hex'),
-    sampleWalletSecretV2.toString('hex'),
+    rootKeypair.toString('hex'),
+    sampleRootKeypairV2.toString('hex'),
     'wallet secret derivates from mnemonic properly'
   )
 })
@@ -52,7 +52,7 @@ test('wallet secret from mnemonic V2', async (t) => {
 test('signing', (t) => {
   t.plan(1)
 
-  const signature = lib.sign(sampleMessage, sampleWalletSecretV1)
+  const signature = lib.sign(sampleMessage, sampleRootKeypairV1)
 
   t.equals(
     signature.toString('hex'),
@@ -81,13 +81,13 @@ test('key hardened derivation', (t) => {
   t.plan(2)
 
   t.equals(
-    lib.derivePrivate(sampleWalletSecretV1, sampleHardenedIndex, 1).toString('hex'),
+    lib.derivePrivate(sampleRootKeypairV1, sampleHardenedIndex, 1).toString('hex'),
     sampleHardenedChildKeyMode1.toString('hex'),
     'should properly derive hardened child key in derivation mode 1'
   )
 
   t.equals(
-    lib.derivePrivate(sampleWalletSecretV1, sampleHardenedIndex, 2).toString('hex'),
+    lib.derivePrivate(sampleRootKeypairV1, sampleHardenedIndex, 2).toString('hex'),
     sampleHardenedChildKeyMode2.toString('hex'),
     'should properly derive hardened child key in derivation mode 2'
   )

@@ -94,24 +94,24 @@ function cborEncodeBuffer(input) {
   return Buffer.concat([Buffer.from(cborPrefix), input])
 }
 
-function sign(msg, walletSecret) {
+function sign(msg, keypair) {
   validateBuffer(msg)
-  validateBuffer(walletSecret, 128)
+  validateBuffer(keypair, 128)
 
   const msgLen = msg.length
   const msgArrPtr = Module._malloc(msgLen)
   const msgArr = new Uint8Array(Module.HEAPU8.buffer, msgArrPtr, msgLen)
-  const walletSecretArrPtr = Module._malloc(128)
-  const walletSecretArr = new Uint8Array(Module.HEAPU8.buffer, walletSecretArrPtr, 128)
+  const keypairArrPtr = Module._malloc(128)
+  const keypairArr = new Uint8Array(Module.HEAPU8.buffer, keypairArrPtr, 128)
   const sigPtr = Module._malloc(64)
   const sigArr = new Uint8Array(Module.HEAPU8.buffer, sigPtr, 64)
 
   msgArr.set(msg)
-  walletSecretArr.set(walletSecret)
+  keypairArr.set(keypair)
 
-  Module._emscripten_sign(walletSecretArrPtr, msgArrPtr, msgLen, sigPtr)
+  Module._emscripten_sign(keypairArrPtr, msgArrPtr, msgLen, sigPtr)
   Module._free(msgArrPtr)
-  Module._free(walletSecretArrPtr)
+  Module._free(keypairArrPtr)
   Module._free(sigPtr)
 
   return Buffer.from(sigArr)
@@ -143,19 +143,19 @@ function verify(msg, publicKey, sig) {
   return result
 }
 
-async function walletSecretFromMnemonic(mnemonic, derivationScheme) {
+async function mnemonicToRootKeypair(mnemonic, derivationScheme) {
   validateDerivationScheme(derivationScheme)
 
   if (derivationScheme === 1) {
-    return walletSecretFromMnemonicV1(mnemonic)
+    return mnemonicToRootKeypairV1(mnemonic)
   } else if (derivationScheme === 2) {
-    return walletSecretFromMnemonicV2(mnemonic, '')
+    return mnemonicToRootKeypairV2(mnemonic, '')
   } else {
     throw Error(`Derivation scheme ${derivationScheme} not implemented`)
   }
 }
 
-function walletSecretFromMnemonicV1(mnemonic) {
+function mnemonicToRootKeypairV1(mnemonic) {
   const seed = mnemonicToSeedV1(mnemonic)
   return seedToKeypairV1(seed)
 }
@@ -175,10 +175,10 @@ function seedToKeypairV1(seed) {
       const tempSeed = digest.slice(0, 32)
       const chainCode = digest.slice(32, 64)
 
-      result = walletSecretFromSeedV1(tempSeed, chainCode)
+      result = trySeedChainCodeToKeypairV1(tempSeed, chainCode)
 
     } catch (e) {
-      if (e.name === 'InvalidSecret') {
+      if (e.name === 'InvalidKeypair') {
         continue
       }
 
@@ -195,7 +195,7 @@ function seedToKeypairV1(seed) {
   return result
 }
 
-function walletSecretFromSeedV1(seed, chainCode) {
+function trySeedChainCodeToKeypairV1(seed, chainCode) {
   validateBuffer(seed, 32)
   validateBuffer(chainCode, 32)
 
@@ -203,41 +203,33 @@ function walletSecretFromSeedV1(seed, chainCode) {
   const seedArr = new Uint8Array(Module.HEAPU8.buffer, seedArrPtr, 32)
   const chainCodeArrPtr = Module._malloc(32)
   const chainCodeArr = new Uint8Array(Module.HEAPU8.buffer, chainCodeArrPtr, 32)
-  const walletSecretArrPtr = Module._malloc(128)
-  const walletSecretArr = new Uint8Array(Module.HEAPU8.buffer, walletSecretArrPtr, 128)
+  const keypairArrPtr = Module._malloc(128)
+  const keypairArr = new Uint8Array(Module.HEAPU8.buffer, keypairArrPtr, 128)
 
   seedArr.set(seed)
   chainCodeArr.set(chainCode)
 
-  const returnCode = Module._emscripten_wallet_secret_from_seed(seedArrPtr, chainCodeArrPtr, walletSecretArrPtr)
+  const returnCode = Module._emscripten_wallet_secret_from_seed(seedArrPtr, chainCodeArrPtr, keypairArrPtr)
 
   Module._free(seedArrPtr)
   Module._free(chainCodeArrPtr)
-  Module._free(walletSecretArrPtr)
+  Module._free(keypairArrPtr)
 
   if (returnCode === 1) {
-    const e = new Error('Invalid secret')
-    e.name = 'InvalidSecret'
+    const e = new Error('Invalid keypair')
+    e.name = 'InvalidKeypair'
 
     throw e
   }
 
-  return Buffer.from(walletSecretArr)
+  return Buffer.from(keypairArr)
 }
 
-async function walletSecretFromMnemonicV2(mnemonic, password) {
+async function mnemonicToRootKeypairV2(mnemonic, password) {
   const seed = mnemonicToSeedV2(mnemonic)
   const rootSecret = await seedToKeypairV2(seed, password)
 
-  return derivePrivate(
-    derivePrivate(
-      rootSecret,
-      HARDENED_THRESHOLD + 44,
-      2
-    ),
-    HARDENED_THRESHOLD + 1815,
-    2
-  )
+  return seedToKeypairV2(seed, password)
 }
 
 function mnemonicToSeedV2(mnemonic) {
@@ -689,7 +681,7 @@ module.exports = {
   derivePrivate,
   sign,
   verify,
-  walletSecretFromMnemonic,
+  mnemonicToRootKeypair,
   decodePaperWalletMnemonic,
   xpubToHdPassphrase,
   packAddress,
