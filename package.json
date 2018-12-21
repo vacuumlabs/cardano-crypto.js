@@ -1,6 +1,6 @@
 {
   "name": "cardano-crypto.js",
-  "version": "4.2.5",
+  "version": "5.0.0",
   "description": "input-output-hk/cardano-crypto compiled to pure javascript using Emscripten",
   "main": "index.js",
   "scripts": {
