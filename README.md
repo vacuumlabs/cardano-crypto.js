@@ -12,7 +12,7 @@ compiled to pure javascript using Emscripten. This is a collection of cryptolibr
 var lib = require('cardano-crypto.js')
 
 var mnemonic = 'logic easily waste eager injury oval sentence wine bomb embrace gossip supreme'
-var walletSecret = await lib.walletSecretFromMnemonic(mnemonic, 1)
+var walletSecret = await lib.mnemonicToRootKeypair(mnemonic, 1)
 var msg = new Buffer('hello there')
 var sig = lib.sign(msg, walletSecret)
 ```
@@ -23,7 +23,7 @@ var sig = lib.sign(msg, walletSecret)
 var lib = require('cardano-crypto.js')
 
 var mnemonic = 'logic easily waste eager injury oval sentence wine bomb embrace gossip supreme'
-var parentWalletSecret = lib.walletSecretFromMnemonic(mnemonic, 1)
+var parentWalletSecret = lib.mnemonicToRootKeypair(mnemonic, 1)
 var childWalletSecret = lib.derivePrivate(parentWalletSecret, 0x80000001, 1)
 ```
 
@@ -33,7 +33,7 @@ var childWalletSecret = lib.derivePrivate(parentWalletSecret, 0x80000001, 1)
 var lib = require('cardano-crypto.js')
 
 var mnemonic = 'logic easily waste eager injury oval sentence wine bomb embrace gossip supreme'
-var parentWalletSecret = lib.walletSecretFromMnemonic(mnemonic, 1)
+var parentWalletSecret = lib.mnemonicToRootKeypair(mnemonic, 1)
 var parentWalletPublicKey = parentWalletSecret.slice(64, 128)
 var childWalletSecret = lib.derivePublic(parentWalletPublicKey, 1, 1)
 ```
