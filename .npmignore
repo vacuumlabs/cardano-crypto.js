@@ -3,4 +3,4 @@ cardano-crypto.c
 build.js
 .npmignore
 .gitignore
-node_modules
+
