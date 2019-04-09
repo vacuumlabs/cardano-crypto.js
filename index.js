@@ -691,6 +691,7 @@ module.exports = {
   blake2b,
   base58,
   scrypt,
+  toPublic,
   _mnemonicToSeedV1: mnemonicToSeedV1,
   _seedToKeypairV1: seedToKeypairV1,
   _mnemonicToSeedV2: mnemonicToSeedV2,

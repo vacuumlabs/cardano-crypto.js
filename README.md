@@ -45,6 +45,7 @@ var childWalletSecret = lib.derivePublic(parentWalletPublicKey, 1, 1)
 * `async Buffer mnemonicToRootKeypair(String mnemonic, int derivationScheme)`
 * `Buffer derivePrivate(Buffer parentKey, int index, int derivationScheme)`
 * `Buffer derivePublic(Buffer parentExtPubKey, int index, int derivationScheme)`
+* `Buffer toPublic(Buffer privateKey)`
 * `Buffer decodePaperWalletMnemonic(string paperWalletMnemonic)`
 * `Buffer xpubToHdPassphrase(Buffer xpub)`
 * `string packAddress(Array[int] derivationPath, Buffer xpub, Buffer hdPassphrase, int derivationScheme)`
