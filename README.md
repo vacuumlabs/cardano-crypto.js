@@ -64,6 +64,22 @@ We encourage you to take a look `at test/index.js` to see how the functions abov
 * run `npm install`
 * run `npm run build`
 
+# emscripten build example
+
+```
+git clone https://github.com/emscripten-core/emsdk.git
+cd emsdk
+./emsdk install sdk-1.38.8-64bit
+./emsdk activate sdk-1.38.8-64bit
+source ./emsdk_env.sh
+cd ../
+git clone https://github.com/vacuumlabs/cardano-crypto.js
+cd cardano-crypto.js
+npm install
+npm run build
+shasum lib.js # should match shasum of published version of lib.js
+```
+
 # tests
 
 * run `npm run test`
