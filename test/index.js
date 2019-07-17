@@ -109,22 +109,6 @@ test('key nonhardened derivation', (t) => {
   )
 })
 
-test('key nonhardened derivation', (t) => {
-  t.plan(2)
-
-  t.equals(
-    lib.derivePublic(sampleExtendedPublicKey, sampleNonhardenedIndex, 1).toString('hex'),
-    sampleNonHardenedChildKeyMode1.toString('hex'),
-    'should properly derive nonhardened child key in derivation mode 1'
-  )
-
-  t.equals(
-    lib.derivePublic(sampleExtendedPublicKey, sampleNonhardenedIndex, 2).toString('hex'),
-    sampleNonHardenedChildKeyMode2.toString('hex'),
-    'should properly derive nonhardened child key in derivation mode 2'
-  )
-})
-
 test('blake2b', (t) => {
   t.plan(1)
 
