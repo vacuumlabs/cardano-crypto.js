@@ -16,7 +16,7 @@ var files = [
   'vendor/cbits/chachapoly/chachapoly.c',
   'vendor/cbits/chachapoly/poly1305.c',
 ]
-var command = 'emcc cardano-crypto.c ' + files.join(' ') + ` -o lib.js -Os -s WASM=0 -s EXPORTED_FUNCTIONS='["_malloc", "_free"]' --memory-init-file 0`
+var command = 'emcc cardano-crypto.c ' + files.join(' ') + ` -o lib.js -Os -s WASM=0 -s EXPORTED_FUNCTIONS='["_malloc", "_free"]' --memory-init-file 0 -s NODEJS_CATCH_EXIT=0 -s NODEJS_CATCH_REJECTION=0`
 var child = exec(command, function(err){
   if(err){
     throw err
