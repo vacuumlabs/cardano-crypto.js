@@ -16,7 +16,7 @@ var files = [
   'vendor/cbits/chachapoly/chachapoly.c',
   'vendor/cbits/chachapoly/poly1305.c',
 ]
-var command = `emcc cardano-crypto.c ${files.join(' ')} -o lib.js -Os -s WASM=0 -s EXPORTED_FUNCTIONS='["_malloc", "_free"]' --memory-init-file 0  -s NODEJS_CATCH_EXIT=0 -s NODEJS_CATCH_REJECTION=0`
+var command = `emcc cardano-crypto.c ${files.join(' ')} -o lib.js -Os -s WASM=0 -s EXPORTED_FUNCTIONS='["_malloc", "_free"]' --memory-init-file 0  -s NODEJS_CATCH_EXIT=0`
 var child = exec(command, function(err){
   if(err){
     throw err
@@ -28,8 +28,20 @@ child.on('exit', function(code){
   if(code){
     process.exit(code)
   }
-  fs.appendFileSync(
-    'lib.js',
-    'if (typeof module !== "undefined") {  module["exports"] = Module; }'
+
+  /*
+  * hotfix to remove catching unhandled rejections. It's already fixed
+  * in newer versions of emscripten (see https://github.com/emscripten-core/emscripten/issues/7855)
+  * but we experience performance problems with them (see README.md), hence the hotfix.
+  */
+  var originalLib = fs.readFileSync('lib.js', 'utf-8')
+  var patchedLib = originalLib.replace(
+    `process["on"]("unhandledRejection",(function(reason,p){process["exit"](1)}));`,
+    ''
   )
+
+  // needed in order for the library to work in the browser
+  patchedLib += 'if (typeof module !== "undefined") {  module["exports"] = Module; }'
+
+  fs.writeFileSync('lib.js', patchedLib, 'utf-8')
 })

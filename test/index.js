@@ -266,6 +266,16 @@ test('address packing/unpacking', async (t) => {
       2
     ),
     'Ae2tdPwUPEZCxt4UV1Uj2AMMRvg5pYPypqZowVptz3GYpK4pkcvn3EjkuNH',
-    'should properly pack V1 address'
+    'should properly pack V2 address'
+  )
+})
+
+test('proper error handling by the library', (t) => {
+  // to avoid accidentally injecting unhandledRejection handler with Emscripten
+  t.plan(1)
+  t.equals(
+    process.listeners('unhandledRejection').length,
+    0,
+    "no unhandled rejection listener should be registered"
   )
 })
