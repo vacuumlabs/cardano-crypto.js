@@ -69,8 +69,8 @@ We encourage you to take a look `at test/index.js` to see how the functions abov
 ```
 git clone https://github.com/emscripten-core/emsdk.git
 cd emsdk
-./emsdk install sdk-1.38.8-64bit
-./emsdk activate sdk-1.38.8-64bit
+./emsdk install sdk-1.38.41-64bit
+./emsdk activate sdk-1.38.41-64bit
 source ./emsdk_env.sh
 cd ../
 git clone https://github.com/vacuumlabs/cardano-crypto.js
