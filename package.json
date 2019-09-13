@@ -23,11 +23,11 @@
   },
   "homepage": "https://github.com/vacuumlabs/cardano-crypto.js#readme",
   "devDependencies": {
-    "tape": "^4.9.1"
+    "tape": "^4.11.0"
   },
   "dependencies": {
-    "bip39-light": "^1.0.7",
-    "borc": "^2.1.0",
+    "bip39": "^3.0.2",
+    "borc": "^2.1.1",
     "pbkdf2": "^3.0.17"
   }
 }

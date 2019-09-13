@@ -1,4 +1,4 @@
-const bip39 = require('bip39-light')
+const bip39 = require('bip39')
 const cbor = require('borc')
 
 const Module = require('./lib.js')
