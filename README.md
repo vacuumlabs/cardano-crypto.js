@@ -48,11 +48,17 @@ var childWalletSecret = lib.derivePublic(parentWalletPublicKey, 1, 1)
 * `Buffer toPublic(Buffer privateKey)`
 * `Buffer decodePaperWalletMnemonic(string paperWalletMnemonic)`
 * `Buffer xpubToHdPassphrase(Buffer xpub)`
-* `string packAddress(Array[int] derivationPath, Buffer xpub, Buffer hdPassphrase, int derivationScheme)`
+* `Buffer packBootstrapAddress(Array[int] derivationPath, Buffer xpub, Buffer hdPassphrase, int derivationScheme)`
+* `Buffer packBaseAddress(Buffer pubKey, Buffer stakePubKey, int addressTypeId, int networkId, Bool isStakeHash = false)`
+* `Buffer packPointerAddress(Buffer pubKey, Object pointer, int addressTypeId, int networkId)`
+* `Buffer packEnterpriseAddress(Buffer pubKey, int addressTypeId, int networkId)`
+* `Object getAddressInfo(Buffer address)`
 * `string unpackAddress(string address, Buffer hdPassphrase)`
 * `Bool isValidAddress(string address)`
 * `Buffer blake2b(Buffer input, outputLen)`
 * `Buffer cardanoMemoryCombine(Buffer input, String password)`
+* `string bech32Encode(string prefix, Buffer data)`
+* `Object bech32Decode(string address)` 
 * `[base58](https://www.npmjs.com/package/base58)`
 * `[scrypt](https://www.npmjs.com/package/scrypt-async)`
 
