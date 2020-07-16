@@ -6,8 +6,16 @@ const crc32 = require('./utils/crc32')
 const base58 = require('./utils/base58')
 const CborIndefiniteLengthArray = require('./utils/CborIndefiniteLengthArray')
 
+const AddressTypes = {
+  'BASE': 0b0000,
+  'POINTER': 0b0100,
+  'ENTERPRISE': 0b0110,
+  'BOOTSTRAP': 0b1000,
+  'REWARDS': 0b1110
+}
+
 function validateAddressType(input, addressTypeId) {
-  if (!['BASE', 'POINTER', 'ENTERPRISE', 'BOOTSTRAP'].includes(addressTypeId)) {
+  if (!['BASE', 'POINTER', 'ENTERPRISE', 'BOOTSTRAP', 'REWARDS'].includes(addressTypeId)) {
     throw new Error("Invalid address type to validate!")
   }
   const addressType = {
@@ -27,6 +35,9 @@ function validateAddressType(input, addressTypeId) {
     },
     BOOTSTRAP: {
       BOOTSTRAP_ADDRESS: 8
+    },
+    REWARDS: {
+      REWARDS_ADDRESS: 14
     }
   }
   if (!Object.values(addressType[addressTypeId]).includes(input)) {
@@ -143,6 +154,19 @@ function packEnterpriseAddress(pubKey, addressType, networkId) {
   return Buffer.concat([header, spending_part])
 }
 
+function packRewardsAccountAddress(stakePubkey, addressType, networkId, isStakeHash = false) {
+  validateBuffer(stakePubkey, 32)
+  validateAddressType(addressType, "REWARDS")
+  let staking_part
+  if (isStakeHash) {
+    staking_part = stakePubKey
+  } else {
+    staking_part = blake2b(stakePubkey, 28)
+  }
+  const header = getAddressHeader(addressType, networkId)
+  return Buffer.concat([header, staking_part])
+}
+
 function getAddressInfo(address) {
   if (!Buffer.isBuffer(address)) {
     throw new Error('Address not a buffer!')
@@ -231,7 +255,9 @@ module.exports = {
   packBaseAddress,
   packPointerAddress,
   packEnterpriseAddress,
-  getAddressInfo,
+  packRewardsAccountAddress,
   unpackAddress,
-  isValidAddress
+  isValidAddress,
+  getAddressInfo,
+  AddressTypes,
 }

@@ -52,7 +52,9 @@ var childWalletSecret = lib.derivePublic(parentWalletPublicKey, 1, 1)
 * `Buffer packBaseAddress(Buffer pubKey, Buffer stakePubKey, int addressType, int networkId, Bool isStakeHash = false)`
 * `Buffer packPointerAddress(Buffer pubKey, Object pointer, int addressType, int networkId)`
 * `Buffer packEnterpriseAddress(Buffer pubKey, int addressType, int networkId)`
+* `Buffer packRewardsAccountAddress(Buffer stakePubkey, int addressType, int networkId, Bool isStakeHash = false)`
 * `Object getAddressInfo(Buffer address)`
+* `Object AddressTypes`
 * `string unpackAddress(string address, Buffer hdPassphrase)`
 * `Bool isValidAddress(string address)`
 * `Buffer blake2b(Buffer input, outputLen)`
