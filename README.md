@@ -49,9 +49,9 @@ var childWalletSecret = lib.derivePublic(parentWalletPublicKey, 1, 1)
 * `Buffer decodePaperWalletMnemonic(string paperWalletMnemonic)`
 * `Buffer xpubToHdPassphrase(Buffer xpub)`
 * `Buffer packBootstrapAddress(Array[int] derivationPath, Buffer xpub, Buffer hdPassphrase, int derivationScheme)`
-* `Buffer packBaseAddress(Buffer pubKey, Buffer stakePubKey, int addressTypeId, int networkId, Bool isStakeHash = false)`
-* `Buffer packPointerAddress(Buffer pubKey, Object pointer, int addressTypeId, int networkId)`
-* `Buffer packEnterpriseAddress(Buffer pubKey, int addressTypeId, int networkId)`
+* `Buffer packBaseAddress(Buffer pubKey, Buffer stakePubKey, int addressType, int networkId, Bool isStakeHash = false)`
+* `Buffer packPointerAddress(Buffer pubKey, Object pointer, int addressType, int networkId)`
+* `Buffer packEnterpriseAddress(Buffer pubKey, int addressType, int networkId)`
 * `Object getAddressInfo(Buffer address)`
 * `string unpackAddress(string address, Buffer hdPassphrase)`
 * `Bool isValidAddress(string address)`
@@ -75,8 +75,8 @@ We encourage you to take a look `at test/index.js` to see how the functions abov
 ```
 git clone https://github.com/emscripten-core/emsdk.git
 cd emsdk
-./emsdk install sdk-1.38.8-64bit
-./emsdk activate sdk-1.38.8-64bit
+./emsdk install 1.39.19
+./emsdk activate 1.39.19
 source ./emsdk_env.sh
 cd ../
 git clone https://github.com/vacuumlabs/cardano-crypto.js
