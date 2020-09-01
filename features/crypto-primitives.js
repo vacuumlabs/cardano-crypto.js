@@ -1,6 +1,6 @@
-const Module = require('./lib.js')
+const Module = require('../lib.js')
 
-const {validateBuffer, validateArray} = require("./utils/validation")
+const {validateBuffer, validateString, validateArray} = require("../utils/validation")
 
 function blake2b(input, outputLen) {
   validateBuffer(input)
@@ -173,10 +173,44 @@ function sha3_256(input) {
   return Buffer.from(outputArr)
 }
 
+// used for encoding/decoding seeds to JSON in Daedalus
+function cardanoMemoryCombine(input, password) {
+  validateBuffer(input)
+  validateString(password)
+
+  if (password === '') {
+    return input
+  }
+
+  const transformedPassword = blake2b(Buffer.from(password, 'utf-8'), 32)
+  const transformedPasswordLen = transformedPassword.length
+  const transformedPasswordArrPtr = Module._malloc(transformedPasswordLen)
+  const transformedPasswordArr = new Uint8Array(Module.HEAPU8.buffer, transformedPasswordArrPtr, transformedPasswordLen)
+
+  const inputLen = input.length
+  const inputArrPtr = Module._malloc(inputLen)
+  const inputArr = new Uint8Array(Module.HEAPU8.buffer, inputArrPtr, inputLen)
+
+  const outputArrPtr = Module._malloc(inputLen)
+  const outputArr = new Uint8Array(Module.HEAPU8.buffer, outputArrPtr, inputLen)
+
+  inputArr.set(input)
+  transformedPasswordArr.set(transformedPassword)
+
+  Module._emscripten_cardano_memory_combine(transformedPasswordArrPtr, transformedPasswordLen, inputArrPtr, outputArrPtr, inputLen)
+
+  Module._free(inputArrPtr)
+  Module._free(outputArrPtr)
+  Module._free(transformedPasswordArrPtr)
+
+  return Buffer.from(outputArr)
+}
+
 module.exports = {
   blake2b,
   chacha20poly1305Decrypt,
   chacha20poly1305Encrypt,
   hmac_sha512,
-  sha3_256
+  sha3_256,
+  cardanoMemoryCombine,
 }

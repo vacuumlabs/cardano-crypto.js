@@ -67,6 +67,14 @@ function validatePaperWalletMnemonic(input) {
   }
 }
 
+function validateNetworkId(input) {
+  if (!Number.isInteger(input) || input < 0 || input > 15) {
+    throw Error(
+      'Network id must be an integer between 0 and 15'
+    )
+  }
+}
+
 module.exports = {
   validateBuffer,
   validateArray,
@@ -75,5 +83,6 @@ module.exports = {
   validateDerivationScheme,
   validateMnemonic,
   validateMnemonicWords,
-  validatePaperWalletMnemonic
+  validatePaperWalletMnemonic,
+  validateNetworkId
 }

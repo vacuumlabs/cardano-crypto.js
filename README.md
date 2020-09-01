@@ -3,10 +3,10 @@
 * [haskell-crypto/cryptonite](https://github.com/haskell-crypto/cryptonite)
 * [grigorig/chachapoly](https://github.com/grigorig/chachapoly)
 
-compiled to pure javascript using Emscripten. This is a collection of cryptolibraries and functions useful for working with Cardano cryptocurrency, eliminating the need for many dependencies.
+Compiled to pure javascript using Emscripten. This is a collection of cryptolibraries and functions useful for working with Cardano cryptocurrency, eliminating the need for many dependencies.
 
-# examples
-## signing
+# Examples
+## Signing
 
 ``` javascript
 var lib = require('cardano-crypto.js')
@@ -17,7 +17,7 @@ var msg = new Buffer('hello there')
 var sig = lib.sign(msg, walletSecret)
 ```
 
-## deriving child keys (hardened derivation, you can choose either derivation scheme 1 or 2)
+## Deriving child keys (hardened derivation, you can choose either derivation scheme 1 or 2)
 
 ``` javascript
 var lib = require('cardano-crypto.js')
@@ -27,7 +27,7 @@ var parentWalletSecret = lib.mnemonicToRootKeypair(mnemonic, 1)
 var childWalletSecret = lib.derivePrivate(parentWalletSecret, 0x80000001, 1)
 ```
 
-## deriving child public keys (nonhardened derivation, you can choose either derivation scheme 1 or 2)
+## Deriving child public keys (nonhardened derivation, you can choose either derivation scheme 1 or 2)
 
 ``` javascript
 var lib = require('cardano-crypto.js')
@@ -38,41 +38,53 @@ var parentWalletPublicKey = parentWalletSecret.slice(64, 128)
 var childWalletSecret = lib.derivePublic(parentWalletPublicKey, 1, 1)
 ```
 
-# available functions
+# Available Functions
 
+## Signing/Verification
 * `Buffer sign(Buffer msg, Buffer walletSecret)`
 * `Bool verify(Buffer msg, Buffer publicKey, Buffer sig)`
+
+## Key derivation
 * `async Buffer mnemonicToRootKeypair(String mnemonic, int derivationScheme)`
 * `Buffer derivePrivate(Buffer parentKey, int index, int derivationScheme)`
 * `Buffer derivePublic(Buffer parentExtPubKey, int index, int derivationScheme)`
 * `Buffer toPublic(Buffer privateKey)`
-* `Buffer decodePaperWalletMnemonic(string paperWalletMnemonic)`
-* `Buffer xpubToHdPassphrase(Buffer xpub)`
+
+## Address encoding/decoding/validation
 * `Buffer packBootstrapAddress(Array[int] derivationPath, Buffer xpub, Buffer hdPassphrase, int derivationScheme)`
-* `Buffer packBaseAddress(Buffer pubKey, Buffer stakePubKey, int addressType, int networkId, Bool isStakeHash = false)`
-* `Buffer packPointerAddress(Buffer pubKey, Object pointer, int addressType, int networkId)`
-* `Buffer packEnterpriseAddress(Buffer pubKey, int addressType, int networkId)`
-* `Buffer packRewardsAccountAddress(Buffer stakePubkey, int addressType, int networkId, Bool isStakeHash = false)`
-* `Object getAddressInfo(Buffer address)`
+* `Buffer packBaseAddress(Buffer spendingKeyHash, Buffer stakingPubKey, int networkId, Bool isStakeHash = false)`
+* `Buffer packPointerAddress(Buffer pubKeyHash, Object pointer, int networkId)`
+* `Buffer packEnterpriseAddress(Buffer spendingKeyHash, int networkId)`
+* `Buffer packRewardAddress(Buffer stakingKeyHash, int networkId, Bool isStakeHash = false)`
+* `Object getAddressType(Buffer address)`
+* `Object getShelleyAddressInfo(Buffer address)`
 * `Object AddressTypes`
-* `string unpackAddress(string address, Buffer hdPassphrase)`
-* `Bool isValidAddress(string address)`
+* `string unpackBootstrapAddress(string address, Buffer hdPassphrase)`
+* `Bool isValidBootstrapAddress(string address)`
+* `Bool isValidShelleyAddress(string address)`
+* `Buffer xpubToHdPassphrase(Buffer xpub)`
+* `Buffer getPubKeyBlake2b224Hash(Buffer pubKey)`
+
+## Cardano crypto primitives
 * `Buffer blake2b(Buffer input, outputLen)`
 * `Buffer cardanoMemoryCombine(Buffer input, String password)`
-* `string bech32Encode(string prefix, Buffer data)`
-* `Object bech32Decode(string address)` 
+* `string bech32.encode(string prefix, Buffer data)`
+* `Object bech32.decode(string address)` 
 * `[base58](https://www.npmjs.com/package/base58)`
 * `[scrypt](https://www.npmjs.com/package/scrypt-async)`
 
+## Daedalus paper wallets (27-word mnemonics)
+* `Buffer decodePaperWalletMnemonic(string paperWalletMnemonic)`
+
 We encourage you to take a look `at test/index.js` to see how the functions above should be used.
 
-# development
+# Development
 
 * Install [emscripten](http://kripken.github.io/emscripten-site/docs/getting_started/downloads.html#installation-instructions), recommended version is 1.38.8
 * run `npm install`
 * run `npm run build`
 
-# emscripten build example
+# Emscripten build example
 
 ```
 git clone https://github.com/emscripten-core/emsdk.git

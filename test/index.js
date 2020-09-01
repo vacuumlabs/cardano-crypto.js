@@ -1,5 +1,6 @@
 const test = require('tape')
 const lib = require('..')
+const { AddressTypes } = require('../features/address')
 
 const sampleWalletMnemonicV1 = 'logic easily waste eager injury oval sentence wine bomb embrace gossip supreme'
 const sampleWalletMnemonicV2 = 'cost dash dress stove morning robust group affair stomach vacant route volume yellow salute laugh'
@@ -199,26 +200,26 @@ test('paper wallet mnemonic decoding', async (t) => {
   )
 })
 
-test('address validation', async (t) => {
+test('bootstrap address validation', async (t) => {
   t.plan(4)
   t.equals(
-    lib.isValidAddress(sampleV1Address),
+    lib.isValidBootstrapAddress(sampleV1Address),
     true,
     'should accept V1 address'
   )
   t.equals(
-    lib.isValidAddress(sampleV2Address),
+    lib.isValidBootstrapAddress(sampleV2Address),
     true,
     'should accept V2 address'
   )
   t.equals(
-    lib.isValidAddress(sampleAddressInvalidChecksum),
+    lib.isValidBootstrapAddress(sampleAddressInvalidChecksum),
     false,
     'should reject address with invalid checksum'
   )
 
   t.equals(
-    lib.isValidAddress(sampleRandomString),
+    lib.isValidBootstrapAddress(sampleRandomString),
     false,
     'should reject random string'
   )
@@ -233,7 +234,7 @@ test('xpubToHdPassphrase', async (t) => {
   )
 })
 
-test('address packing/unpacking', async (t) => {
+test('bootstrap address packing/unpacking', async (t) => {
   t.plan(3)
 
   const expectedV1Address = 'DdzFFzCqrhtBwFyaWje9HStKDWNwWBghBDxGTsnaxoPBE4pZg3pvZC1zDyMpbJqZ7XxpVcHoYc5TA8oA8Hc8gJPUY2kAsaNGW6b8KrrU'
@@ -251,7 +252,7 @@ test('address packing/unpacking', async (t) => {
     'should properly pack V1 address'
   )
   t.equals(
-    JSON.stringify(lib.unpackAddress(
+    JSON.stringify(lib.unpackBootstrapAddress(
       expectedV1Address,
       sampleHdPassphrase
     ).derivationPath),
@@ -273,39 +274,43 @@ test('address packing/unpacking', async (t) => {
 test('shelley addresses', (t) => {
   t.plan(5)
 
-  let pubKeyCardanoTestvector = Buffer.from('73fea80d424276ad0978d4fe5310e8bc2d485f5f6bb3bf87612989f112ad5a7d', 'hex')
-  let stakeKey = Buffer.from('2c041c9c6a676ac54d25e2fdce44c56581e316ae43adc4c7bf17f23214d8d892', 'hex')
+  let spendingPubKey = Buffer.from('73fea80d424276ad0978d4fe5310e8bc2d485f5f6bb3bf87612989f112ad5a7d', 'hex')
+  let stakingPubKey = Buffer.from('2c041c9c6a676ac54d25e2fdce44c56581e316ae43adc4c7bf17f23214d8d892', 'hex')
+  let spendingKeyHash = lib.getPubKeyBlake2b224Hash(spendingPubKey)
+  let stakingKeyHash = lib.getPubKeyBlake2b224Hash(stakingPubKey)
   t.equals(
-    lib.packBaseAddress(pubKeyCardanoTestvector, stakeKey, 0, 3).toString('hex'),
+    lib.packBaseAddress(
+      spendingKeyHash,
+      stakingKeyHash,
+      3
+    ).toString('hex'),
     '039493315cd92eb5d8c4304e67b7e16ae36d61d34502694657811a2c8e32c728d3861e164cab28cb8f006448139c8f1740ffb8e7aa9e5232dc',
     'should properly derive base address'
   )
-  let pubKeyTrezorTestvector = Buffer.from('7dbfba606303655d426f55cca9f77b1b9e2bca0ae69ca2ba7749d7bfc5303260', 'hex')
-  let stakeHash = Buffer.from('122a946b9ad3d2ddf029d3a828f0468aece76895f15c9efbd69b4277', 'hex')
   t.equals(
-    lib.packBaseAddress(pubKeyTrezorTestvector, stakeHash, 0, 3, true).toString('hex'),
-    '03eb0baa5e570cffbe2934db29df0b6a3d7c0430ee65d4c3a7ab2fefb9122a946b9ad3d2ddf029d3a828f0468aece76895f15c9efbd69b4277',
-    'should properly derive base address with unowned staking key hash'
-  )
-  t.equals(
-    lib.packEnterpriseAddress(pubKeyCardanoTestvector, 6, 0).toString('hex'),
+    lib.packEnterpriseAddress(spendingKeyHash, 0).toString('hex'),
     '609493315cd92eb5d8c4304e67b7e16ae36d61d34502694657811a2c8e',
     'should properly derive enterprise address'
   )
   let pointer = {blockIndex: 24157, txIndex: 177, certificateIndex: 42}
   t.equals(
-    lib.packPointerAddress(pubKeyCardanoTestvector, pointer, 4, 3).toString('hex'),
+    lib.packPointerAddress(spendingKeyHash, pointer, 3).toString('hex'),
     '439493315cd92eb5d8c4304e67b7e16ae36d61d34502694657811a2c8e81bc5d81312a',
     'should properly derive pointer address'
   )
   t.equals(
-    JSON.stringify(lib.getAddressInfo(
+    lib.getAddressType(
       Buffer.from('439493315cd92eb5d8c4304e67b7e16ae36d61d34502694657811a2c8e81bc5d81312a', 'hex')
-    )),
-    JSON.stringify({
-      addressType: 4, networkId: 3
-    }),
-    'should properly decode address header'
+    ),
+    AddressTypes.POINTER,
+    'should properly decode address type from shelley address header'
+  )
+  t.equals(
+    lib.getShelleyAddressNetworkId(
+      Buffer.from('439493315cd92eb5d8c4304e67b7e16ae36d61d34502694657811a2c8e81bc5d81312a', 'hex')
+    ),
+    3,
+    'should properly decode address network id from shelley address header'
   )
 })
 
@@ -315,12 +320,12 @@ test('bech32', (t) => {
   let addressBech = 'addr1qz2fxv2umyhttkxyxp8x0dlpdt3k6cwng5pxj3jhsydzer3jcu5d8ps7zex2k2xt3uqxgjqnnj83ws8lhrn648jjxtwqcyl47r'
   let addressBuffer = Buffer.from('009493315cd92eb5d8c4304e67b7e16ae36d61d34502694657811a2c8e32c728d3861e164cab28cb8f006448139c8f1740ffb8e7aa9e5232dc', 'hex')
   t.equals(
-    lib.bech32_encode('addr', addressBuffer),
+    lib.bech32.encode('addr', addressBuffer),
     addressBech,
     'should properly encode bech32 address'
   )
   t.equals(
-    lib.bech32_decode(addressBech)
+    lib.bech32.decode(addressBech)
       .data.toString('hex'),
     addressBuffer.toString('hex'),
     "should properly decode bech32 address"
