@@ -75,6 +75,14 @@ function validateNetworkId(input) {
   }
 }
 
+function validateUint32(input) {
+  if (!Number.isInteger(input) || input < 0 || input >= Math.pow(2, 32)) {
+    throw Error(
+      'Value must be uint32'
+    )
+  }
+}
+
 module.exports = {
   validateBuffer,
   validateArray,
@@ -84,5 +92,6 @@ module.exports = {
   validateMnemonic,
   validateMnemonicWords,
   validatePaperWalletMnemonic,
-  validateNetworkId
+  validateNetworkId,
+  validateUint32
 }

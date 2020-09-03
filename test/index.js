@@ -27,6 +27,8 @@ const sampleV2Address = 'Ae2tdPwUPEZ18ZjTLnLVr9CEvUEUX4eW1LBHbxxxJgxdAYHrDeSCSbC
 const sampleAddressInvalidChecksum = 'Ae2tdPwUPEZ18ZjTLnLVr9CEvUEUX4eW1LBHbxxxJgxdAYHrDeSCSbCxrvm'
 const sampleRandomString = 'hasoiusaodiuhsaijnnsajnsaiussai'
 
+const mainnetProtocolMagic = 764824073
+const testnetProtocolMagic = 42
 
 test('wallet secret from mnemonic V1', async (t) => {
   t.plan(1)
@@ -235,10 +237,13 @@ test('xpubToHdPassphrase', async (t) => {
 })
 
 test('bootstrap address packing/unpacking', async (t) => {
-  t.plan(3)
+  t.plan(5)
 
-  const expectedV1Address = 'DdzFFzCqrhtBwFyaWje9HStKDWNwWBghBDxGTsnaxoPBE4pZg3pvZC1zDyMpbJqZ7XxpVcHoYc5TA8oA8Hc8gJPUY2kAsaNGW6b8KrrU'
-  const expectedV2Address = 'Ae2tdPwUPEZCxt4UV1Uj2AMMRvg5pYPypqZowVptz3GYpK4pkcvn3EjkuNH'
+  const expectedV1MainnetAddress = 'DdzFFzCqrhtBwFyaWje9HStKDWNwWBghBDxGTsnaxoPBE4pZg3pvZC1zDyMpbJqZ7XxpVcHoYc5TA8oA8Hc8gJPUY2kAsaNGW6b8KrrU'
+  const expectedV1TestnetAddress = '2RhQhCGqYPDqLvKWTmnNBHFFUSeMTfdfogpmJMWQE6gmn1bSMiL3ji6Dkjb3YX7UdtaeFSHZBQLKJnPmABFDhp3L2hxvFtPCskG3ep8VpxL1gV'
+  const expectedV2MainnetAddress = 'Ae2tdPwUPEZCxt4UV1Uj2AMMRvg5pYPypqZowVptz3GYpK4pkcvn3EjkuNH'
+  const expectedV2TestnetAddress = '2657WMsDfac6kyMx453f1FZTAVTHcNcuF5pTRD16bcRfGBu53LVPREup3xCV9s5fu'
+
   const derivationPath = [2147483648, 2147483649]
 
   t.equals(
@@ -246,28 +251,52 @@ test('bootstrap address packing/unpacking', async (t) => {
       derivationPath,
       sampleExtendedPublicKey,
       sampleHdPassphrase,
-      1
+      1,
+      mainnetProtocolMagic
     )),
-    expectedV1Address,
-    'should properly pack V1 address'
-  )
-  t.equals(
-    JSON.stringify(lib.unpackBootstrapAddress(
-      expectedV1Address,
-      sampleHdPassphrase
-    ).derivationPath),
-    JSON.stringify(derivationPath),
-    'should properly unpack V1 address'
+    expectedV1MainnetAddress,
+    'should properly pack mainnet V1 address'
   )
   t.equals(
     lib.base58.encode(lib.packBootstrapAddress(
       derivationPath,
       sampleExtendedPublicKey,
       sampleHdPassphrase,
-      2
+      1,
+      testnetProtocolMagic
     )),
-    'Ae2tdPwUPEZCxt4UV1Uj2AMMRvg5pYPypqZowVptz3GYpK4pkcvn3EjkuNH',
-    'should properly pack V2 address'
+    expectedV1TestnetAddress,
+    'should properly pack testnet V1 address'
+  )
+  t.equals(
+    lib.base58.encode(lib.packBootstrapAddress(
+      derivationPath,
+      sampleExtendedPublicKey,
+      sampleHdPassphrase,
+      2,
+      mainnetProtocolMagic
+    )),
+    expectedV2MainnetAddress,
+    'should properly pack mainnet V2 address'
+  )
+  t.equals(
+    lib.base58.encode(lib.packBootstrapAddress(
+      derivationPath,
+      sampleExtendedPublicKey,
+      sampleHdPassphrase,
+      2,
+      testnetProtocolMagic
+    )),
+    expectedV2TestnetAddress,
+    'should properly pack testnet V2 address'
+  )
+  t.equals(
+    JSON.stringify(lib.unpackBootstrapAddress(
+      expectedV1MainnetAddress,
+      sampleHdPassphrase
+    )),
+    JSON.stringify({"addressAttributes":{},"derivationPath":derivationPath}),
+    'should properly unpack address'
   )
 })
 

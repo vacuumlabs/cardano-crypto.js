@@ -7,7 +7,7 @@ const bech32 = require('../utils/bech32')
 const pbkdf2 = require('../utils/pbkdf2')
 const variableLengthEncode = require('../utils/variableLengthEncode')
 const CborIndefiniteLengthArray = require('../utils/CborIndefiniteLengthArray')
-const {validateBuffer, validateDerivationScheme, validateArray, validateString, validateNetworkId} = require("../utils/validation")
+const {validateBuffer, validateDerivationScheme, validateArray, validateString, validateNetworkId, validateUint32} = require("../utils/validation")
 
 const AddressTypes = {
   'BASE': 0b0000,
@@ -21,6 +21,7 @@ const shelleyAddressTypes = [AddressTypes.BASE, AddressTypes.POINTER, AddressTyp
 
 const PUB_KEY_LEN = 32
 const KEY_HASH_LEN = 28
+const MAINNET_PROTOCOL_MAGIC = 764824073
 
 function validatePointer(input) {
   if (!input.hasOwnProperty('blockIndex')
@@ -35,9 +36,10 @@ function validatePointer(input) {
   }
 }
 
-function packBootstrapAddress(derivationPath, xpub, hdPassphrase, derivationScheme) {
+function packBootstrapAddress(derivationPath, xpub, hdPassphrase, derivationScheme, protocolMagic) {
   validateBuffer(xpub, 64)
   validateDerivationScheme(derivationScheme)
+  validateUint32(protocolMagic)
 
   if (derivationScheme === 1) {
     validateArray(derivationPath)
@@ -51,6 +53,10 @@ function packBootstrapAddress(derivationPath, xpub, hdPassphrase, derivationSche
   } else {
     addressPayload = Buffer.from([])
     addressAttributes = new Map()
+  }
+
+  if (protocolMagic !== MAINNET_PROTOCOL_MAGIC) {
+    addressAttributes.set(2, cbor.encode(protocolMagic))
   }
 
   const getAddressRootHash = (input) => blake2b(sha3_256(cbor.encode(input)), 28)
@@ -132,12 +138,12 @@ function unpackBootstrapAddress(address, hdPassphrase) {
   // and then we strip the 24 CBOR data tags (the "[0].value" part)
   const addressAsBuffer = cbor.decode(base58.decode(address))[0].value
   const addressData = cbor.decode(addressAsBuffer)
-  const attributes = addressData[1]
-  const payload = cbor.decode(attributes.get(1))
+  const addressAttributes = addressData[1]
+  const addressPayload = cbor.decode(addressAttributes.get(1))
   let derivationPath
 
   try {
-    derivationPath = decryptDerivationPath(payload, hdPassphrase)
+    derivationPath = decryptDerivationPath(addressPayload, hdPassphrase)
   } catch (e) {
     throw new Error('Unable to get derivation path from address')
   }
