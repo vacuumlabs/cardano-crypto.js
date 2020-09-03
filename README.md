@@ -51,7 +51,7 @@ var childWalletSecret = lib.derivePublic(parentWalletPublicKey, 1, 1)
 * `Buffer toPublic(Buffer privateKey)`
 
 ## Address encoding/decoding/validation
-* `Buffer packBootstrapAddress(Array[int] derivationPath, Buffer xpub, Buffer hdPassphrase, int derivationScheme)`
+* `Buffer packBootstrapAddress(Array[int] derivationPath, Buffer xpub, Buffer hdPassphrase, int derivationScheme, int protocolMagic)`
 * `Buffer packBaseAddress(Buffer spendingKeyHash, Buffer stakingPubKey, int networkId, Bool isStakeHash = false)`
 * `Buffer packPointerAddress(Buffer pubKeyHash, Object pointer, int networkId)`
 * `Buffer packEnterpriseAddress(Buffer spendingKeyHash, int networkId)`
