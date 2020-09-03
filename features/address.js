@@ -14,10 +14,10 @@ const AddressTypes = {
   'POINTER': 0b0100,
   'ENTERPRISE': 0b0110,
   'BOOTSTRAP': 0b1000,
-  'REWARDS': 0b1110
+  'REWARD': 0b1110
 }
 
-const shelleyAddressTypes = [AddressTypes.BASE, AddressTypes.POINTER, AddressTypes.ENTERPRISE, AddressTypes.REWARDS]
+const shelleyAddressTypes = [AddressTypes.BASE, AddressTypes.POINTER, AddressTypes.ENTERPRISE, AddressTypes.REWARD]
 
 const PUB_KEY_LEN = 32
 const KEY_HASH_LEN = 28
@@ -122,7 +122,7 @@ function packRewardAddress(stakingKeyHash, networkId) {
   validateNetworkId(networkId)
 
   return Buffer.concat([
-    getAddressHeader(addressType, networkId),
+    getAddressHeader(AddressTypes.REWARD, networkId),
     stakingKeyHash
   ])
 }
@@ -147,6 +147,7 @@ function unpackBootstrapAddress(address, hdPassphrase) {
   }
 
   return {
+    addressAttributes,
     derivationPath,
   }
 }
