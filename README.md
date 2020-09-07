@@ -59,7 +59,10 @@ var childWalletSecret = lib.derivePublic(parentWalletPublicKey, 1, 1)
 * `Object getAddressType(Buffer address)`
 * `Object getShelleyAddressInfo(Buffer address)`
 * `Object AddressTypes`
-* `Object unpackBootstrapAddress(string address, Buffer hdPassphrase)`
+* `Buffer addressToBuffer(string address) // address can be either bech32 or base58 encoded`
+* `Map getBootstrapAddressAttributes(Buffer address)`
+* `Array<int>? getBootstrapAddressDerivationPath(Buffer address, Buffer hdPassphrase)`
+* `int getBootstrapAddressProtocolMagic(Buffer address)`
 * `Bool isValidBootstrapAddress(string address)`
 * `Bool isValidShelleyAddress(string address)`
 * `Buffer xpubToHdPassphrase(Buffer xpub)`

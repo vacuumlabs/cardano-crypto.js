@@ -23,9 +23,12 @@ const samplePaperWalletMnemonic =
   'force usage medal chapter start myself odor ripple concert aspect wink melt afford lounge smart bulk way hazard burden type broken defense city announce reward same tumble'
 const sampleDecodedPaperWalletMnemonic = 'swim average antenna there trap nice good stereo lion safe next brief'
 const sampleV1Address = 'DdzFFzCqrhssmYoG5Eca1bKZFdGS8d6iag1mU4wbLeYcSPVvBNF2wRG8yhjzQqErbg63N6KJA4DHqha113tjKDpGEwS5x1dT2KfLSbSJ'
+const sampleV1AddressBuf = Buffer.from('82d818584283581c6aebd89cf88271c3ee76339930d8956b03f018b2f4871522f88eb8f9a101581e581c692a37dae3bc63dfc3e1463f12011f26655ab1d1e0f4ed4b8fc63708001ad8a9555b', 'hex')
 const sampleV2Address = 'Ae2tdPwUPEZ18ZjTLnLVr9CEvUEUX4eW1LBHbxxxJgxdAYHrDeSCSbCxrvx'
 const sampleAddressInvalidChecksum = 'Ae2tdPwUPEZ18ZjTLnLVr9CEvUEUX4eW1LBHbxxxJgxdAYHrDeSCSbCxrvm'
 const sampleRandomString = 'hasoiusaodiuhsaijnnsajnsaiussai'
+const sampleBaseAddress = 'addr1qz2fxv2umyhttkxyxp8x0dlpdt3k6cwng5pxj3jhsydzer3jcu5d8ps7zex2k2xt3uqxgjqnnj83ws8lhrn648jjxtwqcyl47r'
+const sampleBaseAddressBuf = Buffer.from('009493315cd92eb5d8c4304e67b7e16ae36d61d34502694657811a2c8e32c728d3861e164cab28cb8f006448139c8f1740ffb8e7aa9e5232dc', 'hex')
 
 const mainnetProtocolMagic = 764824073
 const testnetProtocolMagic = 42
@@ -236,8 +239,28 @@ test('xpubToHdPassphrase', async (t) => {
   )
 })
 
+test('address decoding to buffer', async (t) => {
+  t.plan(2)
+
+  t.equals(
+    lib.addressToBuffer(
+      sampleV1Address
+    ).toString('hex'),
+    sampleV1AddressBuf.toString('hex'),
+    'should properly decode bootstrap address'
+  )
+
+  t.equals(
+    lib.addressToBuffer(
+      sampleBaseAddress
+    ).toString('hex'),
+    sampleBaseAddressBuf.toString('hex'),
+    'should properly decode shelley address'
+  )
+})
+
 test('bootstrap address packing/unpacking', async (t) => {
-  t.plan(5)
+  t.plan(11)
 
   const expectedV1MainnetAddress = 'DdzFFzCqrhtBwFyaWje9HStKDWNwWBghBDxGTsnaxoPBE4pZg3pvZC1zDyMpbJqZ7XxpVcHoYc5TA8oA8Hc8gJPUY2kAsaNGW6b8KrrU'
   const expectedV1TestnetAddress = '2RhQhCGqYPDqLvKWTmnNBHFFUSeMTfdfogpmJMWQE6gmn1bSMiL3ji6Dkjb3YX7UdtaeFSHZBQLKJnPmABFDhp3L2hxvFtPCskG3ep8VpxL1gV'
@@ -291,12 +314,55 @@ test('bootstrap address packing/unpacking', async (t) => {
     'should properly pack testnet V2 address'
   )
   t.equals(
-    JSON.stringify(lib.unpackBootstrapAddress(
-      expectedV1MainnetAddress,
+    lib.getBootstrapAddressAttributes(
+      lib.addressToBuffer(expectedV1MainnetAddress),
+    ).size,
+    1,
+    'should properly get Daedalus bootstrap address attributes'
+  )
+  t.equals(
+    lib.getBootstrapAddressAttributes(
+      lib.addressToBuffer(expectedV2MainnetAddress),
+    ).size,
+    0,
+    'should properly get Icarus bootstrap address attributes'
+  )
+  t.equals(
+    lib.getBootstrapAddressAttributes(
+      lib.addressToBuffer(expectedV1TestnetAddress),
+    ).size,
+    2,
+    'should properly get Daedalus bootstrap address attributes'
+  )
+  t.equals(
+    JSON.stringify(lib.getBootstrapAddressDerivationPath(
+      lib.addressToBuffer(expectedV1TestnetAddress),
       sampleHdPassphrase
     )),
-    JSON.stringify({"addressAttributes":{},"derivationPath":derivationPath}),
-    'should properly unpack address'
+    JSON.stringify(derivationPath),
+    'should properly get Daedalus bootstrap address derivation path'
+  )
+  t.equals(
+    lib.getBootstrapAddressDerivationPath(
+      lib.addressToBuffer(expectedV2MainnetAddress),
+      sampleHdPassphrase
+    ),
+    null,
+    'should properly get Icarus bootstrap address derivation path'
+  )
+  t.equals(
+    lib.getBootstrapAddressProtocolMagic(
+      lib.addressToBuffer(expectedV1MainnetAddress),
+    ),
+    mainnetProtocolMagic,
+    'should properly get Daedalus bootstrap mainnet address protocol magic'
+  )
+  t.equals(
+    lib.getBootstrapAddressProtocolMagic(
+      lib.addressToBuffer(expectedV1TestnetAddress),
+    ),
+    testnetProtocolMagic,
+    'should properly get Daedalus bootstrap testnet address protocol magic'
   )
 })
 
@@ -346,17 +412,14 @@ test('shelley addresses', (t) => {
 test('bech32', (t) => {
   t.plan(2)
 
-  let addressBech = 'addr1qz2fxv2umyhttkxyxp8x0dlpdt3k6cwng5pxj3jhsydzer3jcu5d8ps7zex2k2xt3uqxgjqnnj83ws8lhrn648jjxtwqcyl47r'
-  let addressBuffer = Buffer.from('009493315cd92eb5d8c4304e67b7e16ae36d61d34502694657811a2c8e32c728d3861e164cab28cb8f006448139c8f1740ffb8e7aa9e5232dc', 'hex')
   t.equals(
-    lib.bech32.encode('addr', addressBuffer),
-    addressBech,
+    lib.bech32.encode('addr', sampleBaseAddressBuf),
+    sampleBaseAddress,
     'should properly encode bech32 address'
   )
   t.equals(
-    lib.bech32.decode(addressBech)
-      .data.toString('hex'),
-    addressBuffer.toString('hex'),
+    lib.bech32.decode(sampleBaseAddress).data.toString('hex'),
+    sampleBaseAddressBuf.toString('hex'),
     "should properly decode bech32 address"
   )
 })

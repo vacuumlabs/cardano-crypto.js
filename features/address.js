@@ -133,15 +133,32 @@ function packRewardAddress(stakingKeyHash, networkId) {
   ])
 }
 
-function unpackBootstrapAddress(address, hdPassphrase) {
+function getBootstrapAddressAttributes(addressBuffer) {
   // we decode the address from the base58 string
   // and then we strip the 24 CBOR data tags (the "[0].value" part)
-  const addressAsBuffer = cbor.decode(base58.decode(address))[0].value
+  const addressAsBuffer = cbor.decode(addressBuffer)[0].value
   const addressData = cbor.decode(addressAsBuffer)
   const addressAttributes = addressData[1]
-  const addressPayload = cbor.decode(addressAttributes.get(1))
-  let derivationPath
 
+  // cbor decoder decodes empty map as empty object, so we re-cast it to Map(0)
+  if (!(addressAttributes instanceof Map)) {
+    return new Map()
+  }
+
+  return addressAttributes
+}
+
+function getBootstrapAddressDerivationPath(addressBuffer, hdPassphrase) {
+  const addressAttributes = getBootstrapAddressAttributes(addressBuffer)
+  const addressPayloadCbor = addressAttributes.get(1)
+
+  if (!addressPayloadCbor) {
+    return null
+  }
+  const addressPayload = cbor.decode(addressPayloadCbor)
+
+
+  let derivationPath = null
   try {
     derivationPath = decryptDerivationPath(addressPayload, hdPassphrase)
   } catch (e) {
@@ -152,10 +169,18 @@ function unpackBootstrapAddress(address, hdPassphrase) {
     throw Error('Invalid derivation path length, should be at most 2')
   }
 
-  return {
-    addressAttributes,
-    derivationPath,
+  return derivationPath
+}
+
+function getBootstrapAddressProtocolMagic(addressBuffer) {
+  const addressAttributes = getBootstrapAddressAttributes(addressBuffer)
+
+  const protocolMagicCbor = addressAttributes.get(2)
+  if (!protocolMagicCbor) {
+    return MAINNET_PROTOCOL_MAGIC
   }
+
+  return cbor.decode(protocolMagicCbor)
 }
 
 function isValidBootstrapAddress(address) {
@@ -190,6 +215,16 @@ function isValidShelleyAddress(address) {
     return false
   }
   return true
+}
+
+function addressToBuffer(addressStr) {
+  validateString(addressStr)
+
+  try {
+    return base58.decode(addressStr)
+  } catch (e) {
+    return bech32.decode(addressStr).data
+  }
 }
 
 
@@ -236,14 +271,17 @@ async function xpubToHdPassphrase(xpub) {
 }
 
 module.exports = {
+  addressToBuffer,
   packBootstrapAddress,
   packBaseAddress,
   packPointerAddress,
   packEnterpriseAddress,
   packRewardAddress,
-  unpackBootstrapAddress,
   getAddressType,
   getShelleyAddressNetworkId,
+  getBootstrapAddressAttributes,
+  getBootstrapAddressDerivationPath,
+  getBootstrapAddressProtocolMagic,
   isValidBootstrapAddress,
   isValidShelleyAddress,
   xpubToHdPassphrase,
