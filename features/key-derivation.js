@@ -89,8 +89,6 @@ function trySeedChainCodeToKeypairV1(seed, chainCode) {
 
 async function mnemonicToRootKeypairV2(mnemonic, password) {
   const seed = mnemonicToSeedV2(mnemonic)
-  const rootSecret = await seedToKeypairV2(seed, password)
-
   return seedToKeypairV2(seed, password)
 }
 
