@@ -38,6 +38,9 @@ child.on('exit', function(code){
   var patchedLib = originalLib.replace(
     `process["on"]("unhandledRejection",(function(reason,p){process["exit"](1)}));`,
     ''
+  ).replace(
+    `process["on"]("unhandledRejection",abort);`,
+    ''
   )
 
   // needed in order for the library to work in the browser

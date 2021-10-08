@@ -52,13 +52,16 @@ var childWalletSecret = lib.derivePublic(parentWalletPublicKey, 1, 1)
 
 ## Address encoding/decoding/validation
 * `Buffer packBootstrapAddress(Array[int] derivationPath, Buffer xpub, Buffer hdPassphrase, int derivationScheme, int protocolMagic)`
-* `Buffer packBaseAddress(Buffer spendingKeyHash, Buffer stakingPubKey, int networkId)`
-* `Buffer packPointerAddress(Buffer pubKeyHash, Object pointer, int networkId)`
-* `Buffer packEnterpriseAddress(Buffer spendingKeyHash, int networkId)`
-* `Buffer packRewardAddress(Buffer stakingKeyHash, int networkId)`
+* `Buffer packBaseAddress(Buffer spendingHash, Buffer stakingHash, int networkId, BaseAddressType type)`
+* `Buffer packPointerAddress(Buffer spendingHash, Object pointer, int networkId, Bool isScript)`
+* `Buffer packEnterpriseAddress(Buffer spendingHash, int networkId, Bool isScript)`
+* `Buffer packRewardAddress(Buffer stakingHash, int networkId, Bool isScript)`
 * `Object getAddressType(Buffer address)`
+* `Bool hasSpendingScript(Buffer address)`
+* `Bool hasStakingScript(Buffer address)`
 * `Object getShelleyAddressInfo(Buffer address)`
 * `Object AddressTypes`
+* `Object BaseAddressTypes`
 * `Buffer addressToBuffer(string address) // address can be either bech32 or base58 encoded`
 * `Map getBootstrapAddressAttributes(Buffer address)`
 * `Array<int>? getBootstrapAddressDerivationPath(Buffer address, Buffer hdPassphrase)`

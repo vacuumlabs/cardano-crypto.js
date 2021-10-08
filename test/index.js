@@ -1,6 +1,6 @@
 const test = require('tape')
 const lib = require('..')
-const { AddressTypes } = require('../features/address')
+const { AddressTypes, BaseAddressTypes } = require('../features/address')
 
 const sampleWalletMnemonicV1 = 'logic easily waste eager injury oval sentence wine bomb embrace gossip supreme'
 const sampleWalletMnemonicV2 = 'cost dash dress stove morning robust group affair stomach vacant route volume yellow salute laugh'
@@ -29,6 +29,11 @@ const sampleAddressInvalidChecksum = 'Ae2tdPwUPEZ18ZjTLnLVr9CEvUEUX4eW1LBHbxxxJg
 const sampleRandomString = 'hasoiusaodiuhsaijnnsajnsaiussai'
 const sampleBaseAddress = 'addr1qz2fxv2umyhttkxyxp8x0dlpdt3k6cwng5pxj3jhsydzer3jcu5d8ps7zex2k2xt3uqxgjqnnj83ws8lhrn648jjxtwqcyl47r'
 const sampleBaseAddressBuf = Buffer.from('009493315cd92eb5d8c4304e67b7e16ae36d61d34502694657811a2c8e32c728d3861e164cab28cb8f006448139c8f1740ffb8e7aa9e5232dc', 'hex')
+const sampleScriptAddress = 'addr_test1zqf8ysutwtlp0d25y5crls407s4wv9rs5vd82nr648um5e968m5cqvlnrhd7g8qlwu6vc59l6kcur8ycdv8z38ekat0qdk8pr8'
+const sampleScriptAddressBuf = Buffer.from('101272438b72fe17b55425303fc2aff42ae61470a31a754c7aa9f9ba64ba3ee98033f31ddbe41c1f7734cc50bfd5b1c19c986b0e289f36eade', 'hex')
+const sampleEnterpriseScriptAddress = 'addr_test1wqf8ysutwtlp0d25y5crls407s4wv9rs5vd82nr648um5eql2052n'
+const sampleEnterpriseScriptAddressBuf = Buffer.from('701272438b72fe17b55425303fc2aff42ae61470a31a754c7aa9f9ba64', 'hex')
+
 
 const mainnetProtocolMagic = 764824073
 const testnetProtocolMagic = 42
@@ -230,6 +235,19 @@ test('bootstrap address validation', async (t) => {
   )
 })
 
+test('script address validation', async (t) => {
+  t.plan(3)
+  t.equals(lib.hasSpendingScript(lib.addressToBuffer(sampleBaseAddress)),
+  false,
+  'should reject pubkey address')
+  t.equals(lib.hasSpendingScript(lib.addressToBuffer(sampleScriptAddress)),
+  true,
+  'should accept base script address')
+  t.equals(lib.hasSpendingScript(lib.addressToBuffer(sampleEnterpriseScriptAddress)),
+  true,
+  'should accept enterprise script address')
+})
+
 test('xpubToHdPassphrase', async (t) => {
   t.plan(1)
   t.equals(
@@ -240,7 +258,7 @@ test('xpubToHdPassphrase', async (t) => {
 })
 
 test('address decoding to buffer', async (t) => {
-  t.plan(2)
+  t.plan(4)
 
   t.equals(
     lib.addressToBuffer(
@@ -256,6 +274,22 @@ test('address decoding to buffer', async (t) => {
     ).toString('hex'),
     sampleBaseAddressBuf.toString('hex'),
     'should properly decode shelley address'
+  )
+
+  t.equals(
+    lib.addressToBuffer(
+      sampleScriptAddress
+    ).toString('hex'),
+    sampleScriptAddressBuf.toString('hex'),
+    'should properly decode shelley script address'
+  )
+
+  t.equals(
+    lib.addressToBuffer(
+      sampleEnterpriseScriptAddress
+    ).toString('hex'),
+    sampleEnterpriseScriptAddressBuf.toString('hex'),
+    'should properly decode shelley script address'
   )
 })
 
@@ -367,12 +401,15 @@ test('bootstrap address packing/unpacking', async (t) => {
 })
 
 test('shelley addresses', (t) => {
-  t.plan(5)
+  t.plan(6)
 
   let spendingPubKey = Buffer.from('73fea80d424276ad0978d4fe5310e8bc2d485f5f6bb3bf87612989f112ad5a7d', 'hex')
   let stakingPubKey = Buffer.from('2c041c9c6a676ac54d25e2fdce44c56581e316ae43adc4c7bf17f23214d8d892', 'hex')
+  const scriptStakingPubKey = Buffer.from('ee2a468c65fd5c2febb1b1f2024eedde097cf3d7df43e0961b5774c1a95ad58c', 'hex')
   let spendingKeyHash = lib.getPubKeyBlake2b224Hash(spendingPubKey)
   let stakingKeyHash = lib.getPubKeyBlake2b224Hash(stakingPubKey)
+  let scriptHash = Buffer.from('1272438b72fe17b55425303fc2aff42ae61470a31a754c7aa9f9ba64', 'hex')
+  let scriptStakingHash = lib.getPubKeyBlake2b224Hash(scriptStakingPubKey)
   t.equals(
     lib.packBaseAddress(
       spendingKeyHash,
@@ -381,6 +418,16 @@ test('shelley addresses', (t) => {
     ).toString('hex'),
     '039493315cd92eb5d8c4304e67b7e16ae36d61d34502694657811a2c8e32c728d3861e164cab28cb8f006448139c8f1740ffb8e7aa9e5232dc',
     'should properly derive base address'
+  )
+  t.equals(
+    lib.packBaseAddress(
+      scriptHash,
+      scriptStakingHash,
+      0,
+      BaseAddressTypes.SCRIPT_KEY
+    ).toString('hex'),
+    sampleScriptAddressBuf.toString('hex'),
+    'should properly derive script address'
   )
   t.equals(
     lib.packEnterpriseAddress(spendingKeyHash, 0).toString('hex'),

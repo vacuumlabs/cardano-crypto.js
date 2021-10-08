@@ -11,13 +11,37 @@ const {validateBuffer, validateDerivationScheme, validateArray, validateString, 
 
 const AddressTypes = {
   'BASE': 0b0000,
+  'BASE_SCRIPT_KEY': 0b0001,
+  'BASE_KEY_SCRIPT': 0b0010,
+  'BASE_SCRIPT_SCRIPT': 0b0011,
   'POINTER': 0b0100,
+  'POINTER_SCRIPT': 0b0101,
   'ENTERPRISE': 0b0110,
+  'ENTERPRISE_SCRIPT': 0b0111,
   'BOOTSTRAP': 0b1000,
-  'REWARD': 0b1110
+  'REWARD': 0b1110,
+  'REWARD_SCRIPT': 0b1111,
 }
 
-const shelleyAddressTypes = [AddressTypes.BASE, AddressTypes.POINTER, AddressTypes.ENTERPRISE, AddressTypes.REWARD]
+const BaseAddressTypes = {
+  'BASE': 0b00,
+  'SCRIPT_KEY': 0b01,
+  'KEY_SCRIPT': 0b10,
+  'SCRIPT_SCRIPT': 0b11
+}
+
+const shelleyAddressTypes = [
+  AddressTypes.BASE,
+  AddressTypes.BASE_SCRIPT_KEY,
+  AddressTypes.BASE_KEY_SCRIPT,
+  AddressTypes.BASE_SCRIPT_SCRIPT,
+  AddressTypes.POINTER,
+  AddressTypes.POINTER_SCRIPT,
+  AddressTypes.ENTERPRISE,
+  AddressTypes.ENTERPRISE_SCRIPT,
+  AddressTypes.REWARD,
+  AddressTypes.REWARD_SCRIPT
+]
 
 const PUB_KEY_LEN = 32
 const KEY_HASH_LEN = 28
@@ -83,28 +107,29 @@ function getPubKeyBlake2b224Hash(pubKey) {
   return blake2b(pubKey, KEY_HASH_LEN)
 }
 
-function packBaseAddress(spendingKeyHash, stakingKeyHash, networkId) {
-  validateBuffer(spendingKeyHash, KEY_HASH_LEN)
-  validateBuffer(stakingKeyHash, KEY_HASH_LEN)
+function packBaseAddress(spendingHash, stakingHash, networkId, type = BaseAddressTypes.BASE) {
+  validateBuffer(spendingHash, KEY_HASH_LEN)
+  validateBuffer(stakingHash, KEY_HASH_LEN)
   validateNetworkId(networkId)
+  validateUint32(type)
 
   return Buffer.concat([
-    getAddressHeader(AddressTypes.BASE, networkId),
-    spendingKeyHash,
-    stakingKeyHash,
+    getAddressHeader(AddressTypes.BASE | type, networkId),
+    spendingHash,
+    stakingHash,
   ])
 }
 
-function packPointerAddress(pubKeyHash, pointer, networkId) {
-  validateBuffer(pubKeyHash, KEY_HASH_LEN)
+function packPointerAddress(spendingHash, pointer, networkId, isScript) {
+  validateBuffer(spendingHash, KEY_HASH_LEN)
   validatePointer(pointer)
   validateNetworkId(networkId)
 
   const {blockIndex, txIndex, certificateIndex} = pointer
 
   return Buffer.concat([
-    getAddressHeader(AddressTypes.POINTER, networkId),
-    pubKeyHash,
+    getAddressHeader(isScript? AddressTypes.POINTER_SCRIPT : AddressTypes.POINTER, networkId, isScript),
+    spendingHash,
     Buffer.concat([
       variableLengthEncode(blockIndex),
       variableLengthEncode(txIndex),
@@ -113,23 +138,23 @@ function packPointerAddress(pubKeyHash, pointer, networkId) {
   ])
 }
 
-function packEnterpriseAddress(spendingKeyHash, networkId) {
-  validateBuffer(spendingKeyHash, KEY_HASH_LEN)
+function packEnterpriseAddress(spendingHash, networkId, isScript) {
+  validateBuffer(spendingHash, KEY_HASH_LEN)
   validateNetworkId(networkId)
 
   return Buffer.concat([
-    getAddressHeader(AddressTypes.ENTERPRISE, networkId),
-    spendingKeyHash
+    getAddressHeader(isScript ? AddressTypes.ENTERPRISE_SCRIPT : AddressTypes.ENTERPRISE, networkId, isScript),
+    spendingHash
   ])
 }
 
-function packRewardAddress(stakingKeyHash, networkId) {
-  validateBuffer(stakingKeyHash, KEY_HASH_LEN)
+function packRewardAddress(stakingHash, networkId, isScript) {
+  validateBuffer(stakingHash, KEY_HASH_LEN)
   validateNetworkId(networkId)
 
   return Buffer.concat([
-    getAddressHeader(AddressTypes.REWARD, networkId),
-    stakingKeyHash
+    getAddressHeader(isScript ? AddressTypes.REWARD_SCRIPT : AddressTypes.REWARD, networkId, isScript),
+    stakingHash
   ])
 }
 
@@ -227,11 +252,31 @@ function addressToBuffer(addressStr) {
   }
 }
 
-
 function getAddressType(addressBuffer) {
   validateBuffer(addressBuffer)
 
   return addressBuffer[0] >> 4
+}
+
+function hasSpendingScript(addressBuffer) {
+  validateBuffer(addressBuffer)
+  
+  return [
+    AddressTypes.BASE_SCRIPT_KEY,
+    AddressTypes.BASE_SCRIPT_SCRIPT,
+    AddressTypes.POINTER_SCRIPT,
+    AddressTypes.ENTERPRISE_SCRIPT
+  ].includes(getAddressType(addressBuffer))
+}
+
+function hasStakingScript(addressBuffer) {
+  validateBuffer(addressBuffer)
+  
+  return [
+    AddressTypes.BASE_KEY_SCRIPT,
+    AddressTypes.BASE_SCRIPT_SCRIPT,
+    AddressTypes.REWARD_SCRIPT
+  ].includes(getAddressType(addressBuffer))
 }
 
 function getShelleyAddressNetworkId(addressBuffer) {
@@ -278,6 +323,8 @@ module.exports = {
   packEnterpriseAddress,
   packRewardAddress,
   getAddressType,
+  hasSpendingScript,
+  hasStakingScript,
   getShelleyAddressNetworkId,
   getBootstrapAddressAttributes,
   getBootstrapAddressDerivationPath,
@@ -287,4 +334,5 @@ module.exports = {
   xpubToHdPassphrase,
   getPubKeyBlake2b224Hash,
   AddressTypes,
+  BaseAddressTypes
 }
