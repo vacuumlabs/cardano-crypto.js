@@ -235,6 +235,25 @@ test('bootstrap address validation', async (t) => {
   )
 })
 
+test('Shelley address validation', async (t) => {
+  t.plan(3)
+  t.equals(
+    lib.isValidShelleyAddress(sampleBaseAddress),
+    true,
+    'should accept Shelley base address'
+  )
+  t.equals(
+    lib.isValidShelleyAddress(sampleV1Address),
+    false,
+    'should reject bootstrap address'
+  )
+  t.equals(
+    lib.isValidShelleyAddress('garbage'),
+    false,
+    'should reject arbitrary string'
+  )
+})
+
 test('script address validation', async (t) => {
   t.plan(3)
   t.equals(lib.hasSpendingScript(lib.addressToBuffer(sampleBaseAddress)),
