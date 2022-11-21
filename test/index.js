@@ -38,6 +38,30 @@ const sampleEnterpriseScriptAddressBuf = Buffer.from('701272438b72fe17b55425303f
 const mainnetProtocolMagic = 764824073
 const testnetProtocolMagic = 42
 
+test('regression for bootstrap addresses', async (t) => {
+  // keep this test at the top because otherwise, the original bug may not manifest
+  // see https://github.com/vacuumlabs/cardano-crypto.js/pull/40
+
+  t.plan(1);
+
+  const regressedAddress = lib.packBootstrapAddress(
+    [2147483648, 2147483649],
+    Buffer.from(
+      'fa5955500ecacca4939204a8f1af4639747a161cd35a35368c9c8d48df32685b0f48b0997c0e22e87e9533ba19310ba4a9bf0c6cf37bfed513c37de15761d56e',
+      'hex'
+    ),
+    Buffer.from('7b171a8f6a1200fbfd233094d5d39cf64f688470fa9eb59c90f43edb730020ac', 'hex'),
+    1,
+    764824073
+  );
+
+  t.equals(
+    regressedAddress.toString('hex'),
+    '82d818584283581c15df2fc2d8b33b76fb0bb55f7e85f6bb67ce6311c4375756773a4714a101581e581c2eab4601bfe583428148994f523c1e942766f5109320134e628f4db6001a2be1e66e',
+    'everything should be packed properly'
+  );
+});
+
 test('wallet secret from mnemonic V1', async (t) => {
   t.plan(1)
 
