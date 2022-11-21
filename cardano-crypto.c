@@ -44,13 +44,19 @@ int emscripten_blake2b(const unsigned char *in, size_t inlen, unsigned char *out
   return blake2b(out, out_len, in, inlen, NULL, 0);
 }
 
+typedef struct sha3_256_ctx
+{
+  struct sha3_ctx    sc[1];
+  uint8_t            filler[136];    // 200 - 2*(256/8)
+}
+sha3_256_ctx_t[1];
+
 EMSCRIPTEN_KEEPALIVE
 void emscripten_sha3_256(const unsigned char *in, size_t inlen, unsigned char *out){
-  struct sha3_ctx ctx;
-  memset(&ctx, 0, sizeof(struct sha3_ctx));
-  cryptonite_sha3_init(&ctx, 256);
-  cryptonite_sha3_update(&ctx, in, inlen);
-  cryptonite_sha3_finalize(&ctx, 256, out);
+  sha3_256_ctx_t ctx;
+  cryptonite_sha3_init(ctx->sc, 256);
+  cryptonite_sha3_update(ctx->sc, in, inlen);
+  cryptonite_sha3_finalize(ctx->sc, 256, out);
 }
 
 
