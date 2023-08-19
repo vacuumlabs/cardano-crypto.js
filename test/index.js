@@ -281,14 +281,14 @@ test('Shelley address validation', async (t) => {
 test('script address validation', async (t) => {
   t.plan(3)
   t.equals(lib.hasSpendingScript(lib.addressToBuffer(sampleBaseAddress)),
-  false,
-  'should reject pubkey address')
+    false,
+    'should reject pubkey address')
   t.equals(lib.hasSpendingScript(lib.addressToBuffer(sampleScriptAddress)),
-  true,
-  'should accept base script address')
+    true,
+    'should accept base script address')
   t.equals(lib.hasSpendingScript(lib.addressToBuffer(sampleEnterpriseScriptAddress)),
-  true,
-  'should accept enterprise script address')
+    true,
+    'should accept enterprise script address')
 })
 
 test('xpubToHdPassphrase', async (t) => {
@@ -340,9 +340,9 @@ test('bootstrap address packing/unpacking', async (t) => {
   t.plan(11)
 
   const expectedV1MainnetAddress = 'DdzFFzCqrhtBwFyaWje9HStKDWNwWBghBDxGTsnaxoPBE4pZg3pvZC1zDyMpbJqZ7XxpVcHoYc5TA8oA8Hc8gJPUY2kAsaNGW6b8KrrU'
-  const expectedV1TestnetAddress = '2RhQhCGqYPDqLvKWTmnNBHFFUSeMTfdfogpmJMWQE6gmn1bSMiL3ji6Dkjb3YX7UdtaeFSHZBQLKJnPmABFDhp3L2hxvFtPCskG3ep8VpxL1gV'
+  const expectedV1TestnetAddress = '2RhQhCGqYPDmqw91gYAqUQ51tHrnCg2YqJQobexuYfy7EG6JosyBGz4X6QzDZuGo2kDQ47SCQgJcaPvxoFbBUM8oFcQY9X8bqaws6ciB7LHLSG'
   const expectedV2MainnetAddress = 'Ae2tdPwUPEZCxt4UV1Uj2AMMRvg5pYPypqZowVptz3GYpK4pkcvn3EjkuNH'
-  const expectedV2TestnetAddress = '2657WMsDfac6kyMx453f1FZTAVTHcNcuF5pTRD16bcRfGBu53LVPREup3xCV9s5fu'
+  const expectedV2TestnetAddress = '2657WMsDfac6Ta3RW1eFspxR4ihnKpJvicSzNuVvSMBYYWHP1vvsQLjh3aASd8ZN6'
 
   const derivationPath = [2147483648, 2147483649]
 
@@ -355,7 +355,7 @@ test('bootstrap address packing/unpacking', async (t) => {
       mainnetProtocolMagic
     )),
     expectedV1MainnetAddress,
-    'should properly pack mainnet V1 address'
+    'should properly pack mainnet V1 address (inputs to function not matching standards!)'
   )
   t.equals(
     lib.base58.encode(lib.packBootstrapAddress(
@@ -366,7 +366,7 @@ test('bootstrap address packing/unpacking', async (t) => {
       testnetProtocolMagic
     )),
     expectedV1TestnetAddress,
-    'should properly pack testnet V1 address'
+    'should properly pack testnet V1 address (inputs to function not matching standards!)'
   )
   t.equals(
     lib.base58.encode(lib.packBootstrapAddress(
@@ -377,7 +377,7 @@ test('bootstrap address packing/unpacking', async (t) => {
       mainnetProtocolMagic
     )),
     expectedV2MainnetAddress,
-    'should properly pack mainnet V2 address'
+    'should properly pack mainnet V2 address (inputs to function not matching standards!)'
   )
   t.equals(
     lib.base58.encode(lib.packBootstrapAddress(
@@ -388,7 +388,7 @@ test('bootstrap address packing/unpacking', async (t) => {
       testnetProtocolMagic
     )),
     expectedV2TestnetAddress,
-    'should properly pack testnet V2 address'
+    'should properly pack testnet V2 address (inputs to function not matching standards!)'
   )
   t.equals(
     lib.getBootstrapAddressAttributes(
@@ -443,6 +443,133 @@ test('bootstrap address packing/unpacking', async (t) => {
   )
 })
 
+test('bootstrap address packing/unpacking by Cardano Specs', async (t) => {
+  t.plan(8)
+
+  // V1 (Daedalus)
+  // we use the predefined `sampleWalletMnemonicV1`
+  // we use the precalculated `sampleHdPassphrase`;
+
+  // 0'/0' : Daedalus' derivation path from the root key to #0 address level
+  // Should be passed to `packBootstrapAddress` function
+  const derivationPathV1 = [2147483648, 2147483648]
+
+  // we need an address-related public key to build a root part of the address properly
+  // (!!!) Warning: we can still build a semi-valid address with a wrong public key, we will be able to receive funds with it, but they will be locked forever (!!!)
+  const addrLevelPubKeyV1 = Buffer.from('f286b12bacea7be1a19d581bd573bdc82e8410b98c3a70485b6d6eeb5e88028e00857e69a9598ab4db1346586f8f2c9440f61ccaca62ed36182b9f26fef4a9dd', 'hex')
+
+  const expectedV1MainnetAddress = 'DdzFFzCqrhsnx5973UzwoEcQ7cN3THD9ZQZvbVd5srhrPoECSt1WUTrQSR8YicSnH3disaSxQPcNMUEC7XNuFxRd8jCAKVXLne3r29xs'
+  const expectedV1TestnetAddress = '2RhQhCGqYPDp2jj9jTSErRXMduon1NsBk9DYsA673z74iDPBEwePFxzADN5EiYR8SeueZJouVruiShPeCFrxh4TsBUPEHi9s9wQ9VAaXims2Tg'
+
+  // V2 (Icarus)
+  // we use the predefined `sampleWalletMnemonicV2`
+  // we can also use the precalculated `sampleHdPassphrase`, but it shouldn't affect the result;
+
+  // 44'/1815'/0'/0/0 : Icarus' derivation path from the root key to #0 address level
+  // Can be passed to `packBootstrapAddress` function, but shouldn't affect the result
+  const derivationPathV2 = [2147483692, 2147485463, 2147483648, 0, 0]
+
+  // we need an address-related public key to build a root part of the address properly
+  const addrLevelPubKeyV2 = Buffer.from('57fd54be7b38bb8952782c2f59aa276928a4dcbb66c8c62ce44f9d623ecd5a03bf36a8fa9f5e11eb7a852c41e185e3969d518e66e6893c81d3fc7227009952d4', 'hex')
+
+  const expectedV2MainnetAddress = 'Ae2tdPwUPEZ6RUCnjGHFqi59k5WZLiv3HoCCNGCW8SYc5H9srdTzn1bec4W'
+  const expectedV2TestnetAddress = '2657WMsDfac5nAAZqGe63zmpNvszCktsTup2xUqVBXgvr21nxyuXxf6WbQzKKATDg'
+
+  t.equals(
+    lib.base58.encode(lib.packBootstrapAddress(
+      derivationPathV1,
+      addrLevelPubKeyV1,
+      sampleHdPassphrase,
+      1,
+      mainnetProtocolMagic
+    )),
+    expectedV1MainnetAddress,
+    'should properly pack mainnet V1 address by Cardano Specs'
+  )
+  t.equals(
+    lib.base58.encode(lib.packBootstrapAddress(
+      derivationPathV1,
+      addrLevelPubKeyV1,
+      sampleHdPassphrase,
+      1,
+      testnetProtocolMagic
+    )),
+    expectedV1TestnetAddress,
+    'should properly pack testnet V1 address by Cardano Specs'
+  )
+  t.equals(
+    lib.base58.encode(lib.packBootstrapAddress(
+      derivationPathV2,
+      addrLevelPubKeyV2,
+      sampleHdPassphrase,
+      2,
+      mainnetProtocolMagic
+    )),
+    expectedV2MainnetAddress,
+    'should properly pack mainnet V2 address by Cardano Specs'
+  )
+
+  t.equals(
+    lib.base58.encode(lib.packBootstrapAddress(
+      [],
+      addrLevelPubKeyV2,
+      sampleHdPassphrase,
+      2,
+      mainnetProtocolMagic
+    )),
+    expectedV2MainnetAddress,
+    'should properly pack mainnet V2 address by Cardano Specs with empty `derivationPath`'
+  )
+
+  t.equals(
+    lib.base58.encode(lib.packBootstrapAddress(
+      derivationPathV2,
+      addrLevelPubKeyV2,
+      '',
+      2,
+      mainnetProtocolMagic
+    )),
+    expectedV2MainnetAddress,
+    'should properly pack mainnet V2 address by Cardano Specs with empty `hdPassphrase`'
+  )
+
+  t.equals(
+    lib.base58.encode(lib.packBootstrapAddress(
+      derivationPathV2,
+      addrLevelPubKeyV2,
+      sampleHdPassphrase,
+      2,
+      testnetProtocolMagic
+    )),
+    expectedV2TestnetAddress,
+    'should properly pack testnet V2 address by Cardano Specs'
+  )
+
+  t.equals(
+    lib.base58.encode(lib.packBootstrapAddress(
+      [],
+      addrLevelPubKeyV2,
+      sampleHdPassphrase,
+      2,
+      testnetProtocolMagic
+    )),
+    expectedV2TestnetAddress,
+    'should properly pack testnet V2 address by Cardano Specs with empty `derivationPath`'
+  )
+
+  t.equals(
+    lib.base58.encode(lib.packBootstrapAddress(
+      derivationPathV2,
+      addrLevelPubKeyV2,
+      '',
+      2,
+      testnetProtocolMagic
+    )),
+    expectedV2TestnetAddress,
+    'should properly pack testnet V2 address by Cardano Specs with empty `hdPassphrase`'
+  )
+})
+
 test('shelley addresses', (t) => {
   t.plan(6)
 
@@ -477,7 +604,7 @@ test('shelley addresses', (t) => {
     '609493315cd92eb5d8c4304e67b7e16ae36d61d34502694657811a2c8e',
     'should properly derive enterprise address'
   )
-  let pointer = {blockIndex: 24157, txIndex: 177, certificateIndex: 42}
+  let pointer = { blockIndex: 24157, txIndex: 177, certificateIndex: 42 }
   t.equals(
     lib.packPointerAddress(spendingKeyHash, pointer, 3).toString('hex'),
     '439493315cd92eb5d8c4304e67b7e16ae36d61d34502694657811a2c8e81bc5d81312a',
