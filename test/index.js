@@ -339,17 +339,21 @@ test('address decoding to buffer', async (t) => {
 test('bootstrap address packing/unpacking', async (t) => {
   t.plan(11)
 
-  const expectedV1MainnetAddress = 'DdzFFzCqrhtBwFyaWje9HStKDWNwWBghBDxGTsnaxoPBE4pZg3pvZC1zDyMpbJqZ7XxpVcHoYc5TA8oA8Hc8gJPUY2kAsaNGW6b8KrrU'
-  const expectedV1TestnetAddress = '2RhQhCGqYPDqLvKWTmnNBHFFUSeMTfdfogpmJMWQE6gmn1bSMiL3ji6Dkjb3YX7UdtaeFSHZBQLKJnPmABFDhp3L2hxvFtPCskG3ep8VpxL1gV'
-  const expectedV2MainnetAddress = 'Ae2tdPwUPEZCxt4UV1Uj2AMMRvg5pYPypqZowVptz3GYpK4pkcvn3EjkuNH'
-  const expectedV2TestnetAddress = '2657WMsDfac6kyMx453f1FZTAVTHcNcuF5pTRD16bcRfGBu53LVPREup3xCV9s5fu'
+  const expectedV1MainnetAddress = 'DdzFFzCqrhspzoFuJ7CyjGUzikzfWEz6DmjeYpB6Dt7WDUDYi8Wv4qaJ2YNnVsMJi8p8yTPLfaheT9NpEAwig4dL9sFNa3ynkauwWuym'
+  const expectedV1TestnetAddress = '2RhQhCGqYPDog97s5uM1ooYfYxKS32UWrQLw3EzTx8eQqirnio2YREQsT6aJWKxXC69FWLu8KJFWxk45axajD13Wy9g2BrNG15f1jVCncKKWkC'
+  const expectedV2MainnetAddress = 'Ae2tdPwUPEZ6RUCnjGHFqi59k5WZLiv3HoCCNGCW8SYc5H9srdTzn1bec4W'
+  const expectedV2TestnetAddress = '2657WMsDfac5nAAZqGe63zmpNvszCktsTup2xUqVBXgvr21nxyuXxf6WbQzKKATDg'
 
-  const derivationPath = [2147483648, 2147483649]
+  const derivationPathV1 = [2147483648, 2147483649] // 0'/1'
+  const derivationPathV2 = [2147483692, 2147485463, 2147483648, 0, 0] // 44'/1815'/0'/0/0
+
+  const addrLevelPubKeyV1 = Buffer.from('4171f3337f882c470ead7a6e411340cb8893d1a2cc0c7e0b0f7380bb60065d0609b4f413ad01b2d343026e91c67cd3c7eb89d39b203f5e89874b6cb7a56ae354', 'hex')
+  const addrLevelPubKeyV2 = Buffer.from('57fd54be7b38bb8952782c2f59aa276928a4dcbb66c8c62ce44f9d623ecd5a03bf36a8fa9f5e11eb7a852c41e185e3969d518e66e6893c81d3fc7227009952d4', 'hex')
 
   t.equals(
     lib.base58.encode(lib.packBootstrapAddress(
-      derivationPath,
-      sampleExtendedPublicKey,
+        derivationPathV1,
+        addrLevelPubKeyV1,
       sampleHdPassphrase,
       1,
       mainnetProtocolMagic
@@ -359,8 +363,8 @@ test('bootstrap address packing/unpacking', async (t) => {
   )
   t.equals(
     lib.base58.encode(lib.packBootstrapAddress(
-      derivationPath,
-      sampleExtendedPublicKey,
+        derivationPathV1,
+        addrLevelPubKeyV1,
       sampleHdPassphrase,
       1,
       testnetProtocolMagic
@@ -370,8 +374,8 @@ test('bootstrap address packing/unpacking', async (t) => {
   )
   t.equals(
     lib.base58.encode(lib.packBootstrapAddress(
-      derivationPath,
-      sampleExtendedPublicKey,
+        derivationPathV2,
+        addrLevelPubKeyV2,
       sampleHdPassphrase,
       2,
       mainnetProtocolMagic
@@ -381,8 +385,8 @@ test('bootstrap address packing/unpacking', async (t) => {
   )
   t.equals(
     lib.base58.encode(lib.packBootstrapAddress(
-      derivationPath,
-      sampleExtendedPublicKey,
+        derivationPathV2,
+        addrLevelPubKeyV2,
       sampleHdPassphrase,
       2,
       testnetProtocolMagic
@@ -416,7 +420,7 @@ test('bootstrap address packing/unpacking', async (t) => {
       lib.addressToBuffer(expectedV1TestnetAddress),
       sampleHdPassphrase
     )),
-    JSON.stringify(derivationPath),
+    JSON.stringify(derivationPathV1),
     'should properly get Daedalus bootstrap address derivation path'
   )
   t.equals(
