@@ -70,13 +70,10 @@ function packBootstrapAddress(derivationPath, xpub, hdPassphrase, derivationSche
     validateBuffer(hdPassphrase, 32)
   }
 
-  let addressPayload, addressAttributes
+  let addressAttributes = new Map()
   if (derivationScheme === 1 && derivationPath.length > 0) {
-    addressPayload = encryptDerivationPath(derivationPath, hdPassphrase)
-    addressAttributes = new Map([[1, cbor.encode(addressPayload)]])
-  } else {
-    addressPayload = Buffer.from([])
-    addressAttributes = new Map()
+    const encryptedDerivationPath = encryptDerivationPath(derivationPath, hdPassphrase)
+    addressAttributes.set(1, cbor.encode(encryptedDerivationPath))
   }
 
   if (protocolMagic !== MAINNET_PROTOCOL_MAGIC) {
@@ -88,7 +85,7 @@ function packBootstrapAddress(derivationPath, xpub, hdPassphrase, derivationSche
   const addressRoot = getAddressRootHash([
     0,
     [0, xpub],
-    addressPayload.length > 0 ? new Map([[1, cbor.encode(addressPayload)]]) : new Map(),
+    addressAttributes,
   ])
   const addressType = 0 // Public key address
   const addressData = [addressRoot, addressAttributes, addressType]
